@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%23c8102e%22/%3E%3C/svg%3E">
+<title>Wien Flip-Check – Sanierungsobjekte bewerten</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1d2330;--muted:#6b7385;--line:#e3e6ec;--pri:#c8102e;--pri2:#9e0c24;--ok:#1a8f4c;--warn:#d98a00;--bad:#c62828;--chip:#f0f2f6}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
+header{background:#1d2330;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.2px}
+header h1 span{color:#ff5c73}
+header .sub{color:#aeb6c8;font-size:12.5px}
+header .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer}
+button:hover{border-color:#b9bfcc}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+button.pri:hover{background:var(--pri2)}
+header button{background:#2b3345;border-color:#3a4358;color:#fff}
+header button:hover{background:#38415a}
+main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;padding:20px 24px;max-width:1400px;margin:0 auto}
+@media(max-width:1050px){main{grid-template-columns:1fr}aside{position:static!important}}
+nav.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+nav.tabs button{border-radius:999px;padding:7px 14px;background:#fff}
+nav.tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+nav.tabs button .n{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:50%;background:var(--chip);color:var(--ink);font-size:11px;margin-right:6px}
+nav.tabs button.active .n{background:var(--pri);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 4px}
+.card h3{font-size:14px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.card p.hint{color:var(--muted);margin:0 0 12px;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px 16px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted);font-weight:500}
+label.f input,label.f select{font:inherit;color:var(--ink);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
+label.f input:focus,label.f select:focus{outline:2px solid #ffd1d8;border-color:var(--pri)}
+label.f small{color:#8a92a3;font-weight:400}
+.inrow{display:flex;align-items:center;gap:6px}
+.inrow input{flex:1}
+.inrow span{color:var(--muted);font-size:12px;white-space:nowrap}
+.page{display:none}.page.active{display:block}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.comp select,table.comp input{font:inherit;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:#fff}
+table.comp input{width:78px;text-align:right}
+table.comp td.desc{color:var(--muted);font-size:12px}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check select{font:inherit;padding:5px 7px;border:1px solid var(--line);border-radius:6px;min-width:190px}
+.check .t{flex:1}
+.check .t b{display:block;font-weight:600}
+.check .t small{color:var(--muted)}
+aside{position:sticky;top:16px;align-self:start}
+.verdict{border-radius:12px;padding:16px 18px;color:#fff;margin-bottom:12px}
+.verdict.ok{background:linear-gradient(135deg,#1a8f4c,#137a3f)}
+.verdict.warn{background:linear-gradient(135deg,#e39a10,#c47f00)}
+.verdict.bad{background:linear-gradient(135deg,#d03131,#a91f1f)}
+.verdict .lbl{font-size:12px;opacity:.85;text-transform:uppercase;letter-spacing:.7px}
+.verdict .big{font-size:22px;font-weight:700;margin:2px 0 6px}
+.verdict .score{float:right;font-size:28px;font-weight:700;line-height:1;text-align:right}
+.verdict .score small{display:block;font-size:11px;font-weight:500;opacity:.85}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi .k{font-size:11.5px;color:var(--muted)}
+.kpi .v{font-size:17px;font-weight:650;font-variant-numeric:tabular-nums}
+.kpi .v.pos{color:var(--ok)}.kpi .v.neg{color:var(--bad)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600}
+.pill.ok{background:#e3f5ea;color:#13703b}.pill.warn{background:#fff1d6;color:#925c00}.pill.bad{background:#fde3e3;color:#a11f1f}.pill.info{background:var(--chip);color:var(--ink)}
+.flags{margin:0;padding:0;list-style:none}
+.flags li{padding:7px 0;border-bottom:1px solid var(--line);display:flex;gap:8px;font-size:13px}
+.flags li:last-child{border-bottom:0}
+.bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--chip);margin:6px 0 8px}
+.bar div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.refbox{background:#f8f9fb;border:1px dashed #cfd5df;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:12px}
+.refbox b{font-variant-numeric:tabular-nums}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.two{grid-template-columns:1fr}}
+.navbtns{display:flex;justify-content:space-between;margin-top:6px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.src li{margin-bottom:6px}
+svg text{font-family:inherit}
+.distmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:8px}
+.distmap div{border-radius:8px;padding:6px 8px;font-size:12px;cursor:pointer;border:2px solid transparent;color:#1d2330}
+.distmap div.sel{border-color:var(--ink)}
+.distmap div b{display:block;font-size:13px}
+@media print{header .actions,nav.tabs,.navbtns,.noprint{display:none!important}main{display:block}.page{display:block!important}aside{position:static}.card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Wien <span>Flip-Check</span></h1>
+    <div class="sub">Kauf → Sanierung → Verkauf · kalibriert auf die 23 Wiener Bezirke (Statistik Austria, Transaktionsdaten 2021–2025)</div>
+  </div>
+  <div class="actions">
+    <select id="savedSel" title="Gespeicherte Objekte" style="font:inherit;padding:7px;border-radius:8px;background:#2b3345;color:#fff;border:1px solid #3a4358"></select>
+    <button id="btnSave">Speichern</button>
+    <button id="btnNew">Neues Objekt</button>
+    <button id="btnDel">Löschen</button>
+    <button id="btnPrint">Drucken / PDF</button>
+  </div>
+</header>
+
+<main>
+<section>
+  <nav class="tabs" id="tabs"></nav>
+
+  <!-- 1 LAGE -->
+  <div class="page" data-title="Lage &amp; Objekt">
+    <div class="card">
+      <h2>Lage &amp; Objekt</h2>
+      <p class="hint">Bezirk, Baujahr und Größe bestimmen den Referenz-Quadratmeterpreis aus den Statistik-Austria-Transaktionsdaten. Die Mikrolage-Faktoren passen ihn an die konkrete Wohnung an.</p>
+      <div class="grid">
+        <label class="f">Bezeichnung / Adresse<input data-k="name" type="text" placeholder="z. B. Thaliastraße 12/14"></label>
+        <label class="f">Bezirk<select data-k="bezirk" id="bezirkSel"></select></label>
+        <label class="f">Baujahr des Hauses<select data-k="baujahr">
+          <option value="0">bis 1960 (Altbau / Gründerzeit / Zwischenkrieg)</option>
+          <option value="1">1961–1990</option>
+          <option value="2">ab 1991</option></select></label>
+        <label class="f">Baubewilligung vor 1945?<select data-k="vor1945">
+          <option value="ja">Ja (MRG-Vollanwendung bei Vermietung)</option><option value="nein">Nein</option></select>
+          <small>relevant fürs Ausweichszenario Vermieten</small></label>
+        <label class="f">Wohnfläche (Nutzfläche)<div class="inrow"><input data-k="flaeche" type="number" min="15" step="1"><span>m²</span></div></label>
+        <label class="f">Zimmer<input data-k="zimmer" type="number" min="1" step="0.5"></label>
+        <label class="f">Außenfläche nach Sanierung<select data-k="aussen">
+          <option value="nein">Keine</option><option value="ja">Balkon / Terrasse / Garten vorhanden</option><option value="neu">Balkon wird neu errichtet</option></select></label>
+        <label class="f">Stockwerk<select data-k="stock">
+          <option value="sout">Souterrain</option><option value="eg">Erdgeschoß / Hochparterre</option>
+          <option value="og12">1.–2. Stock</option><option value="og3">3. Stock oder höher</option><option value="dg">Dachgeschoß</option></select></label>
+        <label class="f">Lift<select data-k="lift"><option value="ja">Ja</option><option value="nein">Nein</option><option value="geplant">Geplant (Beschluss EG)</option></select></label>
+        <label class="f">Mikrolage / Grätzl<select data-k="mikro">
+          <option value="top">Sehr gut (Top-Grätzl, Park, U-Bahn &lt; 5 min)</option>
+          <option value="gut">Gut</option><option value="mittel">Durchschnittlich für den Bezirk</option>
+          <option value="einfach">Einfach (Gürtel, Durchzugsstraße, Gewerbe)</option></select></label>
+        <label class="f">Ausrichtung / Lärm<select data-k="laerm">
+          <option value="hof">Ruhig – Hof / Grünblick</option><option value="normal">Normal</option><option value="laut">Laut – Hauptstraße / Gürtel</option></select></label>
+        <label class="f">Grundriss (nach Sanierung)<select data-k="grundriss">
+          <option value="gut">Gut – getrennt begehbar, gute Proportionen</option><option value="mittel">Mittel</option>
+          <option value="schlecht">Schwach – Durchgangszimmer, dunkel, schlauchig</option></select></label>
+        <label class="f">Altbau-Charme<select data-k="charme">
+          <option value="ja">Ja – Raumhöhe &gt; 3 m, Flügeltüren, Stuck, Fischgrät</option><option value="nein">Nein / nicht zutreffend</option></select></label>
+      </div>
+      <div class="refbox" id="refLage"></div>
+      <h3>Bezirksvergleich (Ø Wohnungspreis 2025 alle Baujahre, €/m²) – klicken zum Auswählen</h3>
+      <div class="distmap" id="distmap"></div>
+    </div>
+  </div>
+
+  <!-- 2 KAUF -->
+  <div class="page" data-title="Kauf &amp; Finanzierung">
+    <div class="card">
+      <h2>Kauf &amp; Finanzierung</h2>
+      <p class="hint">Kaufnebenkosten nach österreichischem Recht sind vorbelegt (Grunderwerbsteuer 3,5 %, Grundbucheintragung 1,1 %, Pfandrechtseintragung 1,2 %, Maklerprovision max. 3 % + 20 % USt).</p>
+      <div class="grid">
+        <label class="f">Kaufpreis (Angebot / Verhandlung)<div class="inrow"><input data-k="kaufpreis" type="number" step="1000"><span>€</span></div></label>
+        <label class="f">Käuferprovision Makler<div class="inrow"><input data-k="maklerKauf" type="number" step="0.1"><span>% netto</span></div><small>0 wenn provisionsfrei; + 20 % USt</small></label>
+        <label class="f">Vertragserrichtung &amp; Treuhand<div class="inrow"><input data-k="notar" type="number" step="0.1"><span>% netto</span></div><small>üblich 1–2 % + 20 % USt</small></label>
+        <label class="f">Grunderwerbsteuer<div class="inrow"><input data-k="grest" type="number" step="0.1"><span>%</span></div></label>
+        <label class="f">Grundbucheintragung Eigentum<div class="inrow"><input data-k="gbEig" type="number" step="0.1"><span>%</span></div></label>
+      </div>
+      <h3>Finanzierung</h3>
+      <div class="grid">
+        <label class="f">Fremdfinanzierungsanteil<div class="inrow"><input data-k="ltv" type="number" min="0" max="100" step="5"><span>% von Kauf + Sanierung</span></div></label>
+        <label class="f">Zinssatz<div class="inrow"><input data-k="zins" type="number" step="0.05"><span>% p. a.</span></div></label>
+        <label class="f">Bearbeitungsgebühr / Schätzung<div class="inrow"><input data-k="bankfee" type="number" step="0.1"><span>% vom Kredit</span></div></label>
+        <label class="f">Pfandrechtseintragung<div class="inrow"><input data-k="gbPfand" type="number" step="0.1"><span>% vom Pfandbetrag</span></div><small>Pfandbetrag ≈ 125 % des Kredits</small></label>
+      </div>
+      <div class="refbox" id="refKauf"></div>
+    </div>
+  </div>
+
+  <!-- 3 SANIERUNG -->
+  <div class="page" data-title="Zustand &amp; Sanierung">
+    <div class="card">
+      <h2>Zustand &amp; Sanierung</h2>
+      <p class="hint">Wähle je Gewerk den Umfang. Einheitspreise sind Wiener Richtwerte (brutto inkl. 20 % USt, Stand 2025/26, mittleres Ausstattungsniveau) und können angepasst werden. Für die endgültige Entscheidung immer Angebote einholen.</p>
+      <div class="presets">
+        <span class="muted small" style="align-self:center">Schnellauswahl:</span>
+        <button data-preset="pinsel">Pinselsanierung</button>
+        <button data-preset="standard">Standardsanierung</button>
+        <button data-preset="kern">Kernsanierung</button>
+        <button data-preset="kat">Kernsanierung + Kategorie-Anhebung (WC am Gang)</button>
+      </div>
+      <div class="grid" style="margin-bottom:12px">
+        <label class="f">Preisniveau Handwerker<select data-k="preisniveau">
+          <option value="0.85">Günstig (Eigenregie, Subunternehmer)</option><option value="1">Mittel (Baumeister / GU)</option><option value="1.2">Hochpreisig (Premium-GU, Innenstadt)</option></select></label>
+        <label class="f">Anzahl Fenster<input data-k="fenster" type="number" min="0" step="1"></label>
+        <label class="f">Anzahl Innentüren<input data-k="tueren" type="number" min="0" step="1"></label>
+        <label class="f">Reserve Unvorhergesehenes<div class="inrow"><input data-k="reserve" type="number" step="1"><span>%</span></div><small>Altbau: 15–20 % empfohlen</small></label>
+        <label class="f">Planung / Bauleitung<div class="inrow"><input data-k="planung" type="number" step="1"><span>% der Baukosten</span></div></label>
+      </div>
+      <table class="comp" id="compTable">
+        <thead><tr><th>Gewerk</th><th>Umfang</th><th class="num">Einheitspreis</th><th>Einheit</th><th class="num">Kosten</th></tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+      <div class="grid" style="margin-top:14px">
+        <label class="f">Sanierungskosten manuell überschreiben<div class="inrow"><input data-k="sanOverride" type="number" step="1000" placeholder="leer = Kalkulation"><span>€</span></div><small>z. B. Pauschalangebot eines GU</small></label>
+      </div>
+      <div class="refbox" id="refSan"></div>
+    </div>
+  </div>
+
+  <!-- 4 HAUS & RECHT -->
+  <div class="page" data-title="Haus &amp; Recht">
+    <div class="card">
+      <h2>Haus, Recht &amp; Risiken</h2>
+      <p class="hint">Wiener Spezifika, die einen Flip kippen können. Kritische Punkte („K.O.“) senken die Gesamtbewertung unabhängig von der Rendite.</p>
+      <div id="checks"></div>
+      <div class="grid" style="margin-top:12px">
+        <label class="f">Bekannte Sonderumlage / Anteil an Haussanierung<div class="inrow"><input data-k="sonderumlage" type="number" step="500"><span>€</span></div><small>Fassade, Dach, Steigleitungen, Lifteinbau …</small></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 VERKAUF -->
+  <div class="page" data-title="Verkauf, Zeit &amp; Steuer">
+    <div class="card">
+      <h2>Verkauf, Zeitplan &amp; Steuer</h2>
+      <div class="grid">
+        <label class="f">Ausstattungsniveau nach Sanierung<select data-k="ausstattung">
+          <option value="std">Standard (solide, neutral)</option><option value="geh">Gehoben (Fischgrät, Design-Bad, Klima)</option><option value="prem">Premium (Architekt, Smart Home)</option></select></label>
+        <label class="f">Verkaufspreis €/m² (Ziel)<div class="inrow"><input data-k="vkOverride" type="number" step="50" placeholder="leer = Referenz"><span>€/m²</span></div><small id="vkHint"></small></label>
+        <label class="f">Zeit bis Baustart<div class="inrow"><input data-k="mVor" type="number" min="0" step="1"><span>Monate</span></div><small>Übergabe, Planung, Bauanzeige</small></label>
+        <label class="f">Bauzeit<div class="inrow"><input data-k="mBau" type="number" min="0" step="1"><span>Monate</span></div></label>
+        <label class="f">Vermarktung bis Kaufvertrag/Zahlung<div class="inrow"><input data-k="mVerk" type="number" min="0" step="1"><span>Monate</span></div></label>
+        <label class="f">Betriebskosten + Rücklage während Haltedauer<div class="inrow"><input data-k="bk" type="number" step="0.1"><span>€/m²/Monat</span></div></label>
+        <label class="f">Verkäuferprovision Makler<div class="inrow"><input data-k="maklerVerk" type="number" step="0.1"><span>% netto</span></div><small>+ 20 % USt; 0 bei Eigenvermarktung</small></label>
+        <label class="f">Marketing, Fotos, Home Staging, Energieausweis<div class="inrow"><input data-k="marketing" type="number" step="100"><span>€</span></div></label>
+      </div>
+      <h3>Steuer &amp; Zielwerte</h3>
+      <div class="grid">
+        <label class="f">Käuferstruktur / Besteuerung<select data-k="steuer">
+          <option value="privat">Privatperson – ImmoESt 30 %</option>
+          <option value="gmbh">GmbH – KöSt 23 % (ohne Ausschüttung)</option>
+          <option value="gmbhaus">GmbH – KöSt 23 % + KESt 27,5 % bei Ausschüttung</option>
+          <option value="gewerb">Gewerblicher Grundstückshandel – ESt-Tarif</option></select></label>
+        <label class="f">Grenzsteuersatz (nur gewerblich)<div class="inrow"><input data-k="grenzsatz" type="number" step="1"><span>%</span></div></label>
+        <label class="f">Zielmarge vor Steuern<div class="inrow"><input data-k="zielmarge" type="number" step="1"><span>% auf Gesamtkosten</span></div><small>Profi-Flipper rechnen mit 15–25 %</small></label>
+      </div>
+      <div class="refbox" id="refVerk"></div>
+    </div>
+  </div>
+
+  <!-- 6 AUSWERTUNG -->
+  <div class="page" data-title="Auswertung">
+    <div class="card" id="report"></div>
+  </div>
+
+  <div class="navbtns noprint"><button id="prev">← Zurück</button><button class="pri" id="next">Weiter →</button></div>
+
+  <div class="card small muted" style="margin-top:18px">
+    <b>Quellen &amp; Annahmen</b>
+    <ul class="src">
+      <li>Quadratmeterpreise je Bezirk, Baujahr- und Größenklasse, mit/ohne Außenfläche: <a href="https://www.statistik.at/statistiken/volkswirtschaft-und-oeffentliche-finanzen/preise-und-preisindizes/immobilien-durchschnittspreise" target="_blank" rel="noopener">Statistik Austria – Immobilien-Durchschnittspreise 2025</a> (geometrische Mittel aus Grundbuch-Transaktionen 2021–2025, auf Preisniveau 2025 angepasst). Preisverlauf 2015–2025: Sonderauswertung Statistik Austria.</li>
+      <li>Diese Mittelwerte enthalten Wohnungen aller Zustände. Der Verkaufswert nach Sanierung wird daher mit einem Zustandsaufschlag (Standard +15 %, gehoben +25 %, Premium +35 %) berechnet; der „faire“ Ankaufspreis mit einem Abschlag je nach Sanierungsumfang. Beides sind Erfahrungswerte und als Annahme gekennzeichnet.</li>
+      <li>Kaufnebenkosten: Grunderwerbsteuer 3,5 % (GrEStG), Eintragungsgebühr Eigentum 1,1 % und Pfandrecht 1,2 % (GGG), Maklerhöchstprovision 3 % + USt (Immobilienmaklerverordnung).</li>
+      <li>Steuer: ImmoESt 30 % (§ 30a EStG) – beim besonderen Steuersatz sind Finanzierungs-, Halte- und Verkaufskosten nicht abzugsfähig; Herstellungs-/Instandsetzungsaufwand erhöht die Anschaffungskosten. KöSt 23 %, KESt 27,5 %. Wer regelmäßig flippt, riskiert die Einstufung als gewerblicher Grundstückshandel. Keine Steuerberatung.</li>
+      <li>Sanierungs-Einheitspreise: Marktspannen Wiener Baumeister-/Handwerkerpreise 2025/26 (brutto). Unverbindlich – immer mit Angeboten verifizieren.</li>
+    </ul>
+  </div>
+</section>
+
+<aside id="side"></aside>
+</main>
+
+<script>
+const DATA = __DATA__;
+const YEARS = [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
+
+// Sanierungs-Gewerke: [key, label, options:[label, factor], unitPrice, unit, desc]
+const COMPS = [
+  {k:"abbruch", l:"Abbruch & Entsorgung", u:"m²", p:45, opts:[["keiner",0],["teilweise",0.5],["komplett",1]], d:"Böden, Fliesen, Altinstallationen, Container"},
+  {k:"elektrik", l:"Elektroinstallation", u:"m²", p:120, opts:[["in Ordnung",0],["teilweise / FI nachrüsten",0.35],["komplett neu",1]], d:"Altbau oft 2-adrig, ohne Schutzleiter"},
+  {k:"sanitaer", l:"Wasser- & Abflussleitungen", u:"m²", p:70, opts:[["in Ordnung",0],["teilweise",0.5],["komplett neu",1]], d:"Bleileitungen im Altbau tauschen"},
+  {k:"bad", l:"Badezimmer", u:"Stk", p:20000, opts:[["in Ordnung",0],["Auffrischung",0.35],["komplett neu",1],["2 Bäder neu",2]], d:"inkl. Fliesen, Sanitär, Dusche/Wanne"},
+  {k:"wc", l:"WC separat", u:"Stk", p:5500, opts:[["in Ordnung / im Bad",0],["neu",1]], d:""},
+  {k:"kategorie", l:"Kategorie-Anhebung (Bad/WC neu schaffen)", u:"psch", p:15000, opts:[["nicht nötig",0],["Kat. C/D → A",1]], d:"Gang-WC, keine Nassräume: Strang, Abluft, Grundriss"},
+  {k:"kueche", l:"Küche", u:"Stk", p:13000, opts:[["bleibt / keine",0],["Einfach",0.6],["Mittelklasse",1],["Hochwertig",1.8]], d:"inkl. Geräte & Montage"},
+  {k:"boden", l:"Böden", u:"m²", p:95, opts:[["in Ordnung",0],["Altparkett schleifen/ölen",0.35],["neu verlegen",1]], d:"Eiche-Parkett inkl. Estrich-Ausgleich"},
+  {k:"waende", l:"Wände, Decken, Malerei", u:"m²", p:40, opts:[["nur ausmalen",0.4],["Spachteln + Malen",1],["Neu verputzen",1.8]], d:"pro m² Wohnfläche"},
+  {k:"fensterK", l:"Fenster", u:"Fenster", p:2200, opts:[["in Ordnung",0],["Kastenfenster sanieren",0.75],["neu (Holz-Alu / Kastenf.)",1.35]], d:"in Schutzzonen MA 19 beachten"},
+  {k:"tuerenK", l:"Innentüren", u:"Tür", p:950, opts:[["in Ordnung",0],["Altbautüren aufarbeiten",0.6],["neu",1]], d:""},
+  {k:"eingang", l:"Wohnungseingangstür", u:"Stk", p:2800, opts:[["in Ordnung",0],["Sicherheitstür neu",1]], d:"WK3, brandhemmend"},
+  {k:"heizung", l:"Heizung / Warmwasser", u:"psch", p:8000, opts:[["in Ordnung",0],["Gastherme tauschen",0.9],["neu: Fernwärme / Wärmepumpe",2.2],["Heizkörper + Leitungen neu",1.4]], d:"„Raus aus Gas“: Gasthermen werden mittelfristig unattraktiv"},
+  {k:"grundriss", l:"Grundrissänderung / Trockenbau", u:"m²", p:120, opts:[["keine",0],["kleiner Eingriff",0.3],["neue Raumaufteilung",1]], d:"Statik bei tragenden Wänden, Bauanzeige"},
+  {k:"klima", l:"Klimaanlage", u:"psch", p:7500, opts:[["keine",0],["Split-Gerät(e)",1]], d:"DG / Südlage stark verkaufsfördernd"},
+  {k:"balkon", l:"Balkon-Zubau", u:"psch", p:28000, opts:[["kein",0],["Anteil Balkonzubau",1]], d:"nur mit Zustimmung EG + Baubewilligung"},
+];
+
+const PRESETS = {
+  pinsel:{abbruch:0,elektrik:1,sanitaer:0,bad:1,wc:0,kategorie:0,kueche:1,boden:1,waende:0,fensterK:0,tuerenK:0,eingang:0,heizung:0,grundriss:0,klima:0,balkon:0,reserve:10,planung:0},
+  standard:{abbruch:1,elektrik:2,sanitaer:1,bad:2,wc:0,kategorie:0,kueche:1,boden:2,waende:1,fensterK:0,tuerenK:1,eingang:0,heizung:0,grundriss:0,klima:0,balkon:0,reserve:15,planung:3},
+  kern:{abbruch:2,elektrik:2,sanitaer:2,bad:2,wc:1,kategorie:0,kueche:2,boden:2,waende:1,fensterK:2,tuerenK:2,eingang:1,heizung:3,grundriss:2,klima:0,balkon:0,reserve:18,planung:8},
+  kat:{abbruch:2,elektrik:2,sanitaer:2,bad:2,wc:1,kategorie:1,kueche:2,boden:2,waende:2,fensterK:2,tuerenK:2,eingang:1,heizung:2,grundriss:2,klima:0,balkon:0,reserve:20,planung:10},
+};
+
+// Risiko-Checks: key, title, hint, options [label, points, severity(ok/warn/bad/ko), message]
+const CHECKS = [
+  {k:"we", t:"Wohnungseigentum begründet (parifiziert)?", h:"Ohne Wohnungseigentum (Zinshaus-Anteil, Miteigentum ohne WE) kein normaler Wohnungsverkauf.", o:[["Ja, WE im Grundbuch",0,"ok"],["Wird gerade begründet",8,"warn","Parifizierung noch offen – Verkauf erst nach WE-Begründung möglich."],["Nein, nur Miteigentum",40,"ko","Kein Wohnungseigentum: Verwertung als Eigentumswohnung nicht gesichert."]]},
+  {k:"bestand", t:"Bestandfrei bei Übergabe?", h:"Unbefristete Altmietverträge (MRG) sind praktisch nicht kündbar.", o:[["Ja, bestandfrei",0,"ok"],["Befristeter Mietvertrag läuft aus",10,"warn","Befristung prüfen: Flip-Start erst nach Auszug."],["Unbefristet vermietet",50,"ko","Unbefristet vermietet: Ein Flip ist so nicht möglich – das wäre ein Anlage-Kauf mit Mieter."]]},
+  {k:"widmung", t:"Widmung im WE-Vertrag / Baukonsens", h:"Ist die Einheit als Wohnung gewidmet und baubehördlich bewilligt (Konsens)?", o:[["Wohnung, Konsens vorhanden",0,"ok"],["Unklar – Bauakt bei MA 37 prüfen",10,"warn","Baukonsens beim Bauakt der MA 37 prüfen (frühere Umbauten bewilligt?)."],["Geschäftslokal / Dachboden / kein Konsens",35,"ko","Umwidmung bzw. Baubewilligung nötig – Zeit- und Genehmigungsrisiko."]]},
+  {k:"ruecklage", t:"Rücklage der Eigentümergemeinschaft", h:"Protokolle der Eigentümerversammlungen und Vorausschau der Hausverwaltung anfordern.", o:[["Ausreichend, keine Großprojekte",0,"ok"],["Niedrig",6,"warn","Niedrige Rücklage – Sonderumlagen möglich."],["Großsanierung beschlossen / anstehend",14,"bad","Haussanierung steht an – Sonderumlage einkalkulieren, Baustelle stört den Verkauf."]]},
+  {k:"denkmal", t:"Schutzzone / Denkmalschutz", h:"Fenster, Fassade, Balkon und Dachausbau unterliegen dann Auflagen (MA 19 / BDA).", o:[["Nein",0,"ok"],["Schutzzone",5,"warn","Schutzzone: Fenstertausch & Balkon nur mit MA-19-Zustimmung."],["Denkmalschutz",10,"bad","Denkmalschutz: BDA-Bewilligung, höhere Kosten, längere Planung."]]},
+  {k:"statik", t:"Decken & Statik", h:"Dippelbaumdecken, Feuchteschäden an Tramköpfen, tragende Wände beim Grundrissumbau.", o:[["Unauffällig / Stahlbeton",0,"ok"],["Holzbalken- / Dippelbaumdecke",5,"warn","Holzdecke: Statiker vor Kauf, Trittschall beachten."],["Schäden sichtbar (Durchbiegung, Risse)",18,"bad","Deckenschäden: Gutachten vor Kaufanbot zwingend."]]},
+  {k:"feucht", t:"Feuchtigkeit / Schimmel", h:"Besonders Souterrain, EG, Außenwände und unter Flachdächern.", o:[["Keine",0,"ok"],["Leicht, lokal",6,"warn","Ursache klären (Lüftung vs. aufsteigende Feuchte)."],["Stark / aufsteigend",18,"bad","Aufsteigende Feuchte: Horizontalsperre, hohes Folgerisiko."]]},
+  {k:"gas", t:"Heizsystem im Haus", h:"Wien plant den Ausstieg aus fossilem Gas („Raus aus Gas“ bis 2040). Fernwärme-Anschluss steigert den Wert.", o:[["Fernwärme / Wärmepumpe vorhanden",0,"ok"],["Gasetagenheizung",5,"warn","Gastherme: Käufer preisen künftigen Umstieg ein."],["Einzelöfen / keine Zentralheizung",8,"warn","Keine Zentralheizung: Heizsystem komplett neu planen (Kosten in Sanierung einrechnen)."]]},
+  {k:"zugang", t:"Baustellenlogistik", h:"Lift für Material, Parkmöglichkeit für Container, Ruhezeiten laut Hausordnung.", o:[["Unproblematisch",0,"ok"],["Erschwert (kein Lift, enge Gasse)",4,"warn","Erschwerte Logistik: Bauzeit und Kosten +5–10 %."]]},
+  {k:"energie", t:"Energieausweis (HWB)", h:"Beim Verkauf Pflicht; schlechte Klasse drückt den Preis zunehmend.", o:[["A–C",0,"ok"],["D–E",3,"info"],["F–G / nicht vorhanden",6,"warn","Schwacher HWB: Käufer verlangen Abschläge; Fenster/Dämmung prüfen."]]},
+];
+
+const DEFAULTS = {
+  name:"", bezirk:"16", baujahr:"0", vor1945:"ja", flaeche:65, zimmer:2.5, aussen:"nein", stock:"og12", lift:"ja", mikro:"gut", laerm:"normal", grundriss:"gut", charme:"ja",
+  kaufpreis:165000, maklerKauf:3, notar:1.5, grest:3.5, gbEig:1.1, ltv:70, zins:4.2, bankfee:1, gbPfand:1.2,
+  preisniveau:"1", fenster:4, tueren:4, reserve:15, planung:3, sanOverride:"",
+  comps:{...PRESETS.standard},
+  checks:{}, sonderumlage:0,
+  ausstattung:"geh", vkOverride:"", mVor:2, mBau:4, mVerk:4, bk:3.6, maklerVerk:3, marketing:3500,
+  steuer:"privat", grenzsatz:48, zielmarge:20,
+};
+delete DEFAULTS.comps.reserve; delete DEFAULTS.comps.planung;
+
+let S = JSON.parse(JSON.stringify(DEFAULTS));
+let page = 0;
+
+const fmt = (n,d=0)=> isFinite(n)? n.toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d}) : "–";
+const eur = n => fmt(Math.round(n))+" €";
+const pct = (n,d=1)=> isFinite(n)? fmt(n*100,d)+" %" : "–";
+const $ = s=>document.querySelector(s);
+const $$ = s=>[...document.querySelectorAll(s)];
+
+function sizeClass(a){ return a<54?0:(a<=77?1:2); }
+function refPrice(st, withOutdoor){
+  const d = DATA[st.bezirk]; const idx = (+st.baujahr)*3 + sizeClass(+st.flaeche);
+  return (withOutdoor? d.mit : d.ohne)[idx];
+}
+function lageFactors(st){
+  const f=[];
+  const m={top:[0.10,"Mikrolage sehr gut"],gut:[0.04,"Mikrolage gut"],mittel:[0,"Mikrolage durchschnittlich"],einfach:[-0.08,"Mikrolage einfach"]}[st.mikro]; f.push(m);
+  if(st.stock==="sout") f.push([-0.25,"Souterrain"]);
+  else if(st.stock==="eg") f.push([-0.12,"Erdgeschoß"]);
+  else if(st.stock==="og3") f.push(st.lift==="nein"?[-0.07,"3.+ Stock ohne Lift"]:[0.03,"3.+ Stock mit Lift"]);
+  else if(st.stock==="dg") f.push(st.lift==="nein"?[0.0,"Dachgeschoß ohne Lift"]:[0.10,"Dachgeschoß mit Lift"]);
+  else f.push([0,"1.–2. Stock"]);
+  if(st.lift==="geplant" && (st.stock==="og3"||st.stock==="dg")) f.push([0.02,"Lift geplant"]);
+  f.push({hof:[0.03,"ruhige Hoflage"],normal:[0,"Lärm normal"],laut:[-0.06,"laute Straßenlage"]}[st.laerm]);
+  f.push({gut:[0.02,"guter Grundriss"],mittel:[0,"Grundriss mittel"],schlecht:[-0.07,"schwacher Grundriss"]}[st.grundriss]);
+  if(st.charme==="ja" && st.baujahr==="0") f.push([0.03,"Altbau-Charme"]);
+  return f.filter(x=>x[0]!==0 || x[1].startsWith("Mikrolage"));
+}
+const AUSST = {std:[0.15,"Standard saniert"],geh:[0.25,"gehoben saniert"],prem:[0.35,"Premium saniert"]};
+
+function sanierung(st){
+  const A=+st.flaeche, pn=+st.preisniveau; const rows=[]; let base=0;
+  for(const c of COMPS){
+    const sel = +(st.comps[c.k]??0); const opt=c.opts[sel]||c.opts[0];
+    const unitP = (st.unitP && st.unitP[c.k]!=null)? +st.unitP[c.k] : c.p;
+    let qty = c.u==="m²"?A : c.u==="Fenster"? +st.fenster : c.u==="Tür"? +st.tueren : 1;
+    const cost = opt[1]*unitP*qty*pn;
+    rows.push({c,sel,opt,unitP,qty,cost}); base+=cost;
+  }
+  const plan = base*(+st.planung/100); const res=(base+plan)*(+st.reserve/100);
+  const total = st.sanOverride!=="" && st.sanOverride!=null && !isNaN(+st.sanOverride) && +st.sanOverride>0 ? +st.sanOverride : base+plan+res;
+  return {rows,base,plan,res,total,override: total!==base+plan+res};
+}
+function scope(st){ // Anteil Sanierungsumfang 0..1 -> Ankaufsabschlag
+  const s=sanierung(st); const perM = s.total/(+st.flaeche);
+  return perM;
+}
+
+function calc(st, o={}){
+  const A=+st.flaeche;
+  const P = o.kaufpreis ?? +st.kaufpreis;
+  const san = sanierung(st);
+  const sanTotal = san.total*(o.sanMult??1) + (+st.sonderumlage||0);
+  const withOut = st.aussen!=="nein";
+  const ref = refPrice(st, withOut);
+  const lf = lageFactors(st); const lfSum = lf.reduce((a,b)=>a+b[0],0);
+  const ausst = AUSST[st.ausstattung][0];
+  const refSale = ref*(1+ausst)*(1+lfSum);
+  const vkM2 = (st.vkOverride!=="" && +st.vkOverride>0)? +st.vkOverride : refSale;
+  const sale = vkM2*A*(o.saleMult??1);
+  // Kaufnebenkosten
+  const nkMakler = P*(+st.maklerKauf/100)*1.2;
+  const nkNotar = P*(+st.notar/100)*1.2;
+  const nkGrest = P*(+st.grest/100);
+  const nkGb = P*(+st.gbEig/100);
+  const loan = (P+sanTotal)*(+st.ltv/100);
+  const nkPfand = loan*1.25*(+st.gbPfand/100);
+  const nkBank = loan*(+st.bankfee/100);
+  const nkAnsch = nkMakler+nkNotar+nkGrest+nkGb;
+  // Zeit
+  const mVor=+st.mVor, mBau=+st.mBau, mVerk=+st.mVerk+(o.extraMonths||0);
+  const months = mVor+mBau+mVerk;
+  const r = +st.zins/100/12;
+  const loanP = P*(+st.ltv/100), loanS = sanTotal*(+st.ltv/100);
+  const zinsen = loanP*r*months + loanS*r*(mBau*0.5 + mVerk);
+  const halte = (+st.bk)*A*months;
+  const vkMakler = sale*(+st.maklerVerk/100)*1.2;
+  const vkKosten = vkMakler + (+st.marketing);
+  const finanz = zinsen + nkPfand + nkBank;
+  const total = P + nkAnsch + sanTotal + finanz + halte + vkKosten;
+  const gewinnVor = sale - total;
+  // Steuern
+  let steuer=0, steuerBasis=0;
+  if(st.steuer==="privat"){ steuerBasis = sale - (P+nkAnsch+sanTotal); steuer = Math.max(0,steuerBasis)*0.30; }
+  else if(st.steuer==="gmbh"){ steuerBasis=gewinnVor; steuer=Math.max(0,gewinnVor)*0.23; }
+  else if(st.steuer==="gmbhaus"){ steuerBasis=gewinnVor; const k=Math.max(0,gewinnVor)*0.23; steuer = k + (Math.max(0,gewinnVor)-k)*0.275; }
+  else { steuerBasis=gewinnVor; steuer=Math.max(0,gewinnVor)*(+st.grenzsatz/100); }
+  const gewinnNach = gewinnVor - steuer;
+  const eigenkapital = total - loan;
+  const marge = gewinnVor/total;
+  const roe = gewinnNach/eigenkapital;
+  const roePa = months>0 ? (Math.pow(Math.max(0.0001,1+roe),12/months)-1) : NaN;
+  if(roe<=-1) {}
+  const breakEvenM2 = (total - vkMakler)/(A*(1-(+st.maklerVerk/100)*1.2)) ; // approx
+  return {P,A,san,sanTotal,ref,lf,lfSum,ausst,refSale,vkM2,sale,nkMakler,nkNotar,nkGrest,nkGb,nkPfand,nkBank,nkAnsch,loan,zinsen,halte,vkMakler,vkKosten,finanz,total,gewinnVor,steuer,steuerBasis,gewinnNach,eigenkapital,marge,roe,roePa:(1+roe)>0?roePa:-1,months,breakEvenM2:(total-vkMakler)/A};
+}
+function breakEven(st){ // Verkaufspreis/m², bei dem Gewinn vor Steuern = 0
+  let lo=0, hi=60000; for(let i=0;i<50;i++){ const mid=(lo+hi)/2; const r=calc({...st,vkOverride:mid}); if(r.gewinnVor>0) hi=mid; else lo=mid;} return hi;
+}
+function maxKaufpreis(st, ziel){
+  let lo=0, hi=5e6; for(let i=0;i<60;i++){ const mid=(lo+hi)/2; const r=calc(st,{kaufpreis:mid}); if(r.marge>=ziel) lo=mid; else hi=mid;} return lo;
+}
+function risk(st){
+  let pts=0; const flags=[]; let ko=false;
+  for(const c of CHECKS){ const sel=+(st.checks[c.k]??0); const o=c.o[sel]; pts+=o[1]; if(o[3]) flags.push([o[2],o[3]]); if(o[2]==="ko") ko=true; }
+  if(st.stock==="sout") flags.push(["warn","Souterrain: kleiner Käuferkreis, Feuchte- und Belichtungsrisiko."]);
+  if((st.stock==="og3"||st.stock==="dg") && st.lift==="nein") flags.push(["warn","Hohe Lage ohne Lift: Käuferkreis eingeschränkt, Baustellenlogistik teurer."]);
+  if(st.aussen==="neu") flags.push(["warn","Balkonzubau: Zustimmung aller Wohnungseigentümer bzw. Ersetzung durch das Gericht und Baubewilligung nötig."]);
+  if(+st.comps.grundriss===2) flags.push(["info","Neue Raumaufteilung: Bauanzeige/Baubewilligung (BO für Wien) und ggf. Statiker einplanen."]);
+  if(+st.comps.heizung===0 && st.checks.gas==2) flags.push(["warn","Keine Zentralheizung, aber kein Heizungs-Gewerk kalkuliert."]);
+  if(+st.flaeche<35) flags.push(["info","Sehr kleine Einheit: hohe €/m²-Erlöse möglich, aber Sanierungsfixkosten (Bad, Küche) wiegen schwer."]);
+  return {pts,flags,ko};
+}
+function evaluate(st){
+  const r=calc(st), rk=risk(st);
+  const be=breakEven(st);
+  const worst=calc(st,{saleMult:0.9,sanMult:1.25,extraMonths:6});
+  const sc=[
+    ["Basis",r],
+    ["Verkaufspreis −10 %",calc(st,{saleMult:0.9})],
+    ["Sanierung +25 %",calc(st,{sanMult:1.25})],
+    ["Verzögerung +6 Monate",calc(st,{extraMonths:6})],
+    ["Worst Case (alle drei)",worst],
+  ];
+  // Score 0..100
+  let s = 50 + (r.marge-0.10)*250; // 10% -> 50, 20% -> 75, 30% -> 100
+  s += Math.max(-15, Math.min(10, (r.roePa-0.20)*40));
+  if(worst.gewinnVor<0) s -= Math.min(15, -worst.gewinnVor/r.total*150);
+  s -= rk.pts*0.6;
+  s = Math.max(0,Math.min(100,Math.round(s)));
+  let cls, txt, sub;
+  const ziel=+st.zielmarge/100;
+  if(rk.ko){ cls="bad"; txt="Finger weg (K.O.-Kriterium)"; sub="Ein rechtliches/objektbezogenes Hindernis verhindert einen sauberen Flip."; s=Math.min(s,25); }
+  else if(r.marge>=ziel && s>=65){ cls="ok"; txt="Kauf lohnt sich"; sub="Marge über Ziel, Risiko vertretbar."; }
+  else if(r.marge>=Math.max(0.08,ziel*0.5) && s>=40){ cls="warn"; txt="Grenzwertig – nachverhandeln"; sub="Nur mit niedrigerem Kaufpreis oder schlankerer Sanierung."; }
+  else { cls="bad"; txt="Lohnt sich nicht"; sub="Marge zu gering für das Sanierungsrisiko."; }
+  const maxKP = maxKaufpreis(st, ziel);
+  return {r,rk,be,sc,s,cls,txt,sub,maxKP,worst};
+}
+
+/* ---------- UI ---------- */
+function buildTabs(){
+  const pages=$$(".page"); const nav=$("#tabs"); nav.innerHTML="";
+  pages.forEach((p,i)=>{ const b=document.createElement("button"); b.innerHTML=`<span class="n">${i+1}</span>${p.dataset.title}`; b.onclick=()=>go(i); nav.appendChild(b); });
+}
+function go(i){ page=Math.max(0,Math.min($$(".page").length-1,i)); $$(".page").forEach((p,j)=>p.classList.toggle("active",j===page)); $$("#tabs button").forEach((b,j)=>b.classList.toggle("active",j===page)); $("#prev").style.visibility=page?"visible":"hidden"; $("#next").textContent= page===$$(".page").length-2? "Zur Auswertung →" : "Weiter →"; $("#next").style.visibility= page===$$(".page").length-1?"hidden":"visible"; window.scrollTo({top:0,behavior:"smooth"}); }
+
+function buildBezirk(){
+  const sel=$("#bezirkSel"); sel.innerHTML="";
+  for(let i=1;i<=23;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=`${i}. ${DATA[i].name}`; sel.appendChild(o);}
+  const vals=Object.values(DATA).map(d=>d.trend[10]); const mn=Math.min(...vals), mx=Math.max(...vals.filter(v=>v<10000));
+  const dm=$("#distmap"); dm.innerHTML="";
+  for(let i=1;i<=23;i++){ const v=DATA[i].trend[10]; const t=Math.min(1,(v-mn)/(mx-mn)); const div=document.createElement("div");
+    div.style.background=`hsl(${130-130*t},55%,${86-10*t}%)`; div.dataset.b=i; div.innerHTML=`<b>${i}. ${DATA[i].name}</b>${fmt(v)} €/m²`;
+    div.onclick=()=>{S.bezirk=String(i); syncInputs(); update();}; dm.appendChild(div);}
+}
+function buildComps(){
+  const tb=$("#compTable tbody"); tb.innerHTML="";
+  for(const c of COMPS){
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><b>${c.l}</b><div class="desc muted small">${c.d}</div></td>
+      <td><select data-comp="${c.k}">${c.opts.map((o,i)=>`<option value="${i}">${o[0]}</option>`).join("")}</select></td>
+      <td class="num"><input data-unit="${c.k}" type="number" step="5"> €</td><td class="small muted">/ ${c.u}</td><td class="num" data-cost="${c.k}"></td>`;
+    tb.appendChild(tr);
+  }
+}
+function buildChecks(){
+  const box=$("#checks"); box.innerHTML="";
+  for(const c of CHECKS){ const d=document.createElement("div"); d.className="check";
+    d.innerHTML=`<div class="t"><b>${c.t}</b><small>${c.h}</small></div><select data-check="${c.k}">${c.o.map((o,i)=>`<option value="${i}">${o[0]}</option>`).join("")}</select>`;
+    box.appendChild(d);}
+}
+function syncInputs(){
+  $$("[data-k]").forEach(el=>{ const v=S[el.dataset.k]; el.value = v ?? ""; });
+  $$("[data-comp]").forEach(el=> el.value = S.comps[el.dataset.comp] ?? 0);
+  $$("[data-unit]").forEach(el=>{ const c=COMPS.find(x=>x.k===el.dataset.unit); el.value = (S.unitP&&S.unitP[c.k]!=null)?S.unitP[c.k]:c.p; });
+  $$("[data-check]").forEach(el=> el.value = S.checks[el.dataset.check] ?? 0);
+}
+function bindInputs(){
+  document.addEventListener("input",e=>{
+    const el=e.target;
+    if(el.dataset.k){ S[el.dataset.k]= el.type==="number" ? (el.value===""?"":el.value) : el.value; update(); }
+    else if(el.dataset.comp){ S.comps[el.dataset.comp]=+el.value; update(); }
+    else if(el.dataset.unit){ S.unitP=S.unitP||{}; S.unitP[el.dataset.unit]= el.value===""?null:+el.value; update(); }
+    else if(el.dataset.check){ S.checks[el.dataset.check]=+el.value; update(); }
+  });
+  $$("[data-preset]").forEach(b=>b.onclick=()=>{ const p=PRESETS[b.dataset.preset]; for(const k in p){ if(k==="reserve"||k==="planung") S[k]=p[k]; else S.comps[k]=p[k]; } if(b.dataset.preset==="kat") S.checks.gas=S.checks.gas; syncInputs(); update(); });
+  $("#prev").onclick=()=>go(page-1); $("#next").onclick=()=>go(page+1);
+}
+
+function sparkline(trend){
+  const pts=trend.map((v,i)=>[i,v]).filter(p=>p[1]!=null); const W=330,H=90,pad=24;
+  const vs=pts.map(p=>p[1]); const mn=Math.min(...vs)*0.95, mx=Math.max(...vs)*1.03;
+  const x=i=>pad+(W-pad*1.5)*i/10, y=v=>H-18-(H-30)*(v-mn)/(mx-mn);
+  const d=pts.map((p,j)=>(j?"L":"M")+x(p[0]).toFixed(1)+","+y(p[1]).toFixed(1)).join(" ");
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"><path d="${d}" fill="none" stroke="#c8102e" stroke-width="2"/>
+  ${pts.map(p=>`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="2.4" fill="#c8102e"/>`).join("")}
+  <text x="${x(0)}" y="${H-3}" font-size="10" fill="#6b7385">2015</text><text x="${x(10)-22}" y="${H-3}" font-size="10" fill="#6b7385">2025</text>
+  <text x="${x(0)+4}" y="${y(pts[0][1])+14}" font-size="10" fill="#6b7385">${fmt(pts[0][1])}</text>
+  <text x="${x(10)-30}" y="${y(pts[pts.length-1][1])-6}" font-size="10" fill="#1d2330" font-weight="600">${fmt(pts[pts.length-1][1])}</text></svg>`;
+}
+function cagr(trend,from,to){ const a=trend[from],b=trend[to]; return (a&&b)? Math.pow(b/a,1/(to-from))-1 : NaN; }
+
+function update(){
+  const ev=evaluate(S), r=ev.r, d=DATA[S.bezirk];
+  $$("#distmap div").forEach(x=>x.classList.toggle("sel",x.dataset.b===S.bezirk));
+  // Lage refbox
+  const sizeTxt=["< 54 m²","54–77 m²","> 77 m²"][sizeClass(+S.flaeche)], bjTxt=["bis 1960","1961–1990","ab 1991"][+S.baujahr];
+  $("#refLage").innerHTML=`<b>Referenz Statistik Austria – ${S.bezirk}. ${d.name}</b>, Baujahr ${bjTxt}, ${sizeTxt}:
+   ohne Außenfläche <b>${fmt(refPrice(S,false))} €/m²</b> · mit Außenfläche <b>${fmt(refPrice(S,true))} €/m²</b> (Ø aller Zustände).<br>
+   Lagefaktoren: ${r.lf.map(f=>`${f[1]} <span class="pill ${f[0]>0?'ok':f[0]<0?'bad':'info'}">${f[0]>0?'+':''}${fmt(f[0]*100)} %</span>`).join(" ")} → Summe <b>${r.lfSum>=0?'+':''}${fmt(r.lfSum*100)} %</b>`;
+  // Kauf refbox
+  const kpM2=r.P/r.A; const scopeM2=r.sanTotal/r.A;
+  const abschlag = scopeM2<400?0.92: scopeM2<900?0.82: scopeM2<1500?0.74:0.66;
+  const fairM2 = refPrice(S,false)*(1+r.lfSum)*abschlag;
+  const diff = kpM2/fairM2-1;
+  $("#refKauf").innerHTML=`Kaufpreis <b>${fmt(kpM2)} €/m²</b> · Bezirks-Ø (gleiche Klasse, alle Zustände) <b>${fmt(refPrice(S,false))} €/m²</b> → ${pct(kpM2/refPrice(S,false)-1)} <br>
+   Fairer Ankaufspreis bei diesem Sanierungsumfang (Annahme: −${fmt((1-abschlag)*100)} % vs. Ø, lagebereinigt): <b>${fmt(fairM2)} €/m²</b> ≈ <b>${eur(fairM2*r.A)}</b>
+   <span class="pill ${diff<=-0.05?'ok':diff<=0.05?'warn':'bad'}">${diff<=0?'':'+'}${pct(diff)} ${diff<=-0.05?'unter Markt':diff<=0.05?'marktüblich':'über Markt'}</span><br>
+   Kaufnebenkosten: <b>${eur(r.nkAnsch)}</b> (${pct(r.nkAnsch/r.P)}) + Finanzierungsnebenkosten ${eur(r.nkPfand+r.nkBank)} · Kredit ${eur(r.loan)} · Eigenkapitalbedarf <b>${eur(r.eigenkapital)}</b>`;
+  // Sanierung table
+  for(const row of r.san.rows){ const c=$(`[data-cost="${row.c.k}"]`); if(c) c.textContent= row.cost? eur(row.cost):"–"; }
+  $("#compTable tfoot").innerHTML=`<tr><td colspan="4">Summe Gewerke</td><td class="num">${eur(r.san.base)}</td></tr>
+   <tr><td colspan="4">Planung / Bauleitung (${S.planung} %)</td><td class="num">${eur(r.san.plan)}</td></tr>
+   <tr><td colspan="4">Reserve (${S.reserve} %)</td><td class="num">${eur(r.san.res)}</td></tr>
+   <tr><th colspan="4">Sanierung gesamt ${r.san.override?'<span class="pill warn">manuell überschrieben</span>':''}</th><th class="num">${eur(r.san.total)}</th></tr>`;
+  const sm=r.san.total/r.A; const band= sm<500?"Pinselsanierung (Wien: ca. 300–600 €/m²)": sm<1100?"Standardsanierung (Wien: ca. 700–1.200 €/m²)": sm<1900?"Kernsanierung (Wien: ca. 1.200–2.000 €/m²)":"Luxus-/Komplettsanierung (> 2.000 €/m²)";
+  $("#refSan").innerHTML=`Sanierung: <b>${fmt(sm)} €/m²</b> → entspricht <b>${band}</b>${+S.sonderumlage?` · zzgl. Sonderumlage ${eur(+S.sonderumlage)}`:""}.`;
+  // Verkauf
+  $("#vkHint").textContent=`Referenz: ${fmt(r.refSale)} €/m² (${AUSST[S.ausstattung][1]} +${AUSST[S.ausstattung][0]*100} %, Lage ${r.lfSum>=0?'+':''}${fmt(r.lfSum*100)} %)`;
+  $("#refVerk").innerHTML=`Verkaufserlös: <b>${fmt(r.vkM2)} €/m² × ${fmt(r.A)} m² = ${eur(r.sale)}</b> · Projektdauer <b>${r.months} Monate</b> · Break-even-Verkaufspreis <b>${fmt(ev.be)} €/m²</b><br>
+   Plausibilität: Ø Neubau/Erstbezug ab 1991 im ${S.bezirk}. Bezirk: <b>${fmt(DATA[S.bezirk][S.aussen!=="nein"?"mit":"ohne"][6+sizeClass(+S.flaeche)])} €/m²</b> – ein sanierter Altbau liegt meist in dieser Größenordnung.`;
+  renderSide(ev); renderReport(ev);
+}
+
+function renderSide(ev){
+  const r=ev.r;
+  $("#side").innerHTML=`<div class="verdict ${ev.cls}"><div class="score">${ev.s}<small>/ 100 Punkte</small></div><div class="lbl">Einschätzung</div><div class="big">${ev.txt}</div><div class="small">${ev.sub}</div></div>
+  <div class="kpis">
+    <div class="kpi"><div class="k">Gesamtkosten</div><div class="v">${eur(r.total)}</div></div>
+    <div class="kpi"><div class="k">Verkaufserlös</div><div class="v">${eur(r.sale)}</div></div>
+    <div class="kpi"><div class="k">Gewinn vor Steuern</div><div class="v ${r.gewinnVor>=0?'pos':'neg'}">${eur(r.gewinnVor)}</div></div>
+    <div class="kpi"><div class="k">Gewinn nach Steuern</div><div class="v ${r.gewinnNach>=0?'pos':'neg'}">${eur(r.gewinnNach)}</div></div>
+    <div class="kpi"><div class="k">Marge auf Kosten</div><div class="v ${r.marge>=+S.zielmarge/100?'pos':r.marge<0?'neg':''}">${pct(r.marge)}</div></div>
+    <div class="kpi"><div class="k">EK-Rendite p. a. (n. St.)</div><div class="v ${r.roePa>=0.15?'pos':r.roePa<0?'neg':''}">${pct(r.roePa)}</div></div>
+    <div class="kpi"><div class="k">Max. Kaufpreis für ${S.zielmarge} % Marge</div><div class="v">${eur(ev.maxKP)}</div></div>
+    <div class="kpi"><div class="k">Break-even Verkauf</div><div class="v">${fmt(ev.be)} €/m²</div></div>
+  </div>
+  <div class="card" style="margin-top:12px;padding:12px 14px"><b class="small">Risiken &amp; Hinweise</b>
+   <ul class="flags">${ev.rk.flags.length? ev.rk.flags.map(f=>`<li><span class="pill ${f[0]==='ko'?'bad':f[0]}">${f[0]==='ko'?'K.O.':f[0]==='bad'?'hoch':f[0]==='warn'?'mittel':'Info'}</span><span>${f[1]}</span></li>`).join("") : '<li class="muted">Keine Auffälligkeiten erfasst – Checkliste unter „Haus &amp; Recht“ ausfüllen.</li>'}</ul></div>
+  <button class="pri noprint" style="width:100%" onclick="go(5)">Detaillierte Auswertung</button>`;
+}
+
+function renderReport(ev){
+  const r=ev.r, d=DATA[S.bezirk];
+  const parts=[["Kaufpreis",r.P,"#1d2330"],["Kaufnebenkosten",r.nkAnsch,"#6b7385"],["Sanierung",r.sanTotal,"#c8102e"],["Finanzierung",r.finanz,"#e39a10"],["Haltekosten",r.halte,"#7aa5d6"],["Verkaufskosten",r.vkKosten,"#9b7ad6"]];
+  const tot=parts.reduce((a,b)=>a+b[1],0);
+  const c5=cagr(d.trend,5,10), c10=cagr(d.trend,0,10);
+  $("#report").innerHTML=`
+   <h2>Auswertung ${S.name?('– '+S.name):''}</h2>
+   <p class="hint">${S.bezirk}. ${d.name} · ${fmt(r.A)} m² · ${S.zimmer} Zi. · Kaufpreis ${eur(r.P)} (${fmt(r.P/r.A)} €/m²) · Verkauf ${fmt(r.vkM2)} €/m² · ${r.months} Monate</p>
+   <div class="verdict ${ev.cls}"><div class="score">${ev.s}<small>/ 100 Punkte</small></div><div class="lbl">Gesamteinschätzung</div><div class="big">${ev.txt}</div><div>${ev.sub}
+    ${ev.cls!=="ok" && !ev.rk.ko ? ` Für ${S.zielmarge} % Marge darf der Kaufpreis höchstens <b>${eur(ev.maxKP)}</b> (${fmt(ev.maxKP/r.A)} €/m²) betragen${ev.maxKP<r.P?` – das sind ${eur(r.P-ev.maxKP)} weniger als angeboten`:''}.`:''}</div></div>
+   <h3>Kostenstruktur</h3>
+   <div class="bar">${parts.map(p=>`<div style="width:${p[1]/tot*100}%;background:${p[2]}" title="${p[0]}"></div>`).join("")}</div>
+   <div class="legend">${parts.map(p=>`<span><i style="background:${p[2]}"></i>${p[0]} ${eur(p[1])}</span>`).join("")}</div>
+   <div class="two" style="margin-top:14px">
+    <table><tbody>
+     <tr><td>Kaufpreis</td><td class="num">${eur(r.P)}</td></tr>
+     <tr><td class="muted">Grunderwerbsteuer ${S.grest} %</td><td class="num">${eur(r.nkGrest)}</td></tr>
+     <tr><td class="muted">Grundbuch Eigentum ${S.gbEig} %</td><td class="num">${eur(r.nkGb)}</td></tr>
+     <tr><td class="muted">Vertragserrichtung/Treuhand inkl. USt</td><td class="num">${eur(r.nkNotar)}</td></tr>
+     <tr><td class="muted">Makler Kauf inkl. USt</td><td class="num">${eur(r.nkMakler)}</td></tr>
+     <tr><td>Sanierung${+S.sonderumlage?' inkl. Sonderumlage':''}</td><td class="num">${eur(r.sanTotal)}</td></tr>
+     <tr><td class="muted">Zinsen (${S.zins} %, ${r.months} Mo.)</td><td class="num">${eur(r.zinsen)}</td></tr>
+     <tr><td class="muted">Pfandrecht + Bankspesen</td><td class="num">${eur(r.nkPfand+r.nkBank)}</td></tr>
+     <tr><td class="muted">Betriebskosten/Rücklage Haltedauer</td><td class="num">${eur(r.halte)}</td></tr>
+     <tr><td class="muted">Makler Verkauf + Marketing</td><td class="num">${eur(r.vkKosten)}</td></tr>
+     <tr><th>Gesamtkosten</th><th class="num">${eur(r.total)}</th></tr>
+    </tbody></table>
+    <table><tbody>
+     <tr><td>Verkaufserlös</td><td class="num">${eur(r.sale)}</td></tr>
+     <tr><td>Gewinn vor Steuern</td><td class="num">${eur(r.gewinnVor)}</td></tr>
+     <tr><td class="muted">Steuerbemessung ${S.steuer==="privat"?"(ImmoESt: Erlös − Anschaffung − Sanierung)":""}</td><td class="num">${eur(r.steuerBasis)}</td></tr>
+     <tr><td class="muted">Steuern</td><td class="num">−${eur(r.steuer)}</td></tr>
+     <tr><th>Gewinn nach Steuern</th><th class="num">${eur(r.gewinnNach)}</th></tr>
+     <tr><td>Eigenkapitaleinsatz</td><td class="num">${eur(r.eigenkapital)}</td></tr>
+     <tr><td>Marge vor Steuern / Gesamtkosten</td><td class="num">${pct(r.marge)}</td></tr>
+     <tr><td>EK-Rendite (Projekt / p. a.)</td><td class="num">${pct(r.roe)} / ${pct(r.roePa)}</td></tr>
+     <tr><td>Max. Kaufpreis für ${S.zielmarge} % Marge</td><td class="num">${eur(ev.maxKP)}</td></tr>
+     <tr><td>Break-even-Verkaufspreis</td><td class="num">${fmt(ev.be)} €/m²</td></tr>
+    </tbody></table>
+   </div>
+   ${S.steuer==="privat"?`<p class="small muted">Hinweis ImmoESt: Zinsen, Haltekosten und Verkaufsprovision sind beim 30 %-Sondersteuersatz nicht abzugsfähig (Regelbesteuerungsoption prüfen). Mehrere Flips in kurzer Zeit → Gefahr „gewerblicher Grundstückshandel“ (ESt-Tarif + SV).</p>`:""}
+   <h3>Stresstest</h3>
+   <table><thead><tr><th>Szenario</th><th class="num">Erlös</th><th class="num">Kosten</th><th class="num">Gewinn v. St.</th><th class="num">Marge</th><th class="num">EK-Rendite p. a.</th></tr></thead><tbody>
+    ${ev.sc.map(([n,x])=>`<tr><td>${n}</td><td class="num">${eur(x.sale)}</td><td class="num">${eur(x.total)}</td><td class="num" style="color:${x.gewinnVor<0?'var(--bad)':'inherit'}">${eur(x.gewinnVor)}</td><td class="num">${pct(x.marge)}</td><td class="num">${pct(x.roePa)}</td></tr>`).join("")}
+   </tbody></table>
+   <div class="two" style="margin-top:8px">
+    <div><h3>Preisentwicklung ${S.bezirk}. ${d.name}</h3>${sparkline(d.trend)}
+     <div class="small muted">Ø Wohnungspreis €/m² (alle Baujahre, Statistik Austria). Wachstum p. a.: 10 J. <b>${pct(c10)}</b> · 5 J. <b>${pct(c5)}</b>. Seit dem Zinsanstieg 2022 stagnieren viele Bezirke – kalkuliere ohne Preissteigerung.</div></div>
+    <div><h3>Bezirks-Referenzen (Baujahr ${["bis 1960","1961–1990","ab 1991"][+S.baujahr]})</h3>
+     <table><thead><tr><th></th><th class="num">&lt; 54 m²</th><th class="num">54–77</th><th class="num">&gt; 77</th></tr></thead><tbody>
+      <tr><td>ohne Außenfl.</td>${[0,1,2].map(i=>`<td class="num">${fmt(d.ohne[+S.baujahr*3+i])}</td>`).join("")}</tr>
+      <tr><td>mit Außenfl.</td>${[0,1,2].map(i=>`<td class="num">${fmt(d.mit[+S.baujahr*3+i])}</td>`).join("")}</tr>
+      <tr><td>ab 1991 (ohne)</td>${[0,1,2].map(i=>`<td class="num">${fmt(d.ohne[6+i])}</td>`).join("")}</tr>
+     </tbody></table>
+     <div class="small muted" style="margin-top:6px">${S.vor1945==="ja"?"Ausweichszenario Vermieten: Bei Baubewilligung vor 1945 gilt im Altbau die MRG-Vollanwendung (Richtwertmietzins + Zuschläge, Befristungsabschlag) – die Mietrendite ist dann meist niedrig. Plane den Flip so, dass ein Verkauf auch mit Preisabschlag aufgeht.":"Ausweichszenario Vermieten: Bei Bauten ab 1945 (frei finanziert) ist meist der freie Mietzins möglich."}</div>
+    </div>
+   </div>
+   <h3>Risiken &amp; To-dos vor dem Kaufanbot</h3>
+   <ul class="flags">${ev.rk.flags.map(f=>`<li><span class="pill ${f[0]==='ko'?'bad':f[0]}">${f[0]==='ko'?'K.O.':f[0]==='bad'?'hoch':f[0]==='warn'?'mittel':'Info'}</span><span>${f[1]}</span></li>`).join("")}
+    <li><span class="pill info">To-do</span><span>Grundbuchauszug, WE-Vertrag, Nutzwertgutachten, letzte 3 Protokolle der Eigentümerversammlung, Vorausschau &amp; Rücklagenstand von der Hausverwaltung anfordern.</span></li>
+    <li><span class="pill info">To-do</span><span>Bauakt bei der MA 37 einsehen (Konsens, frühere Umbauten); bei Grundrissänderung Bauanzeige/Statik einplanen.</span></li>
+    <li><span class="pill info">To-do</span><span>Mindestens 2 Angebote (Baumeister/GU) vor bindendem Kaufanbot; Kaufanbot mit Finanzierungsvorbehalt.</span></li>
+   </ul>`;
+}
+
+/* ---------- Speichern ---------- */
+const LS="wienFlip.objects";
+function loadAll(){ try{return JSON.parse(localStorage.getItem(LS))||{};}catch{return {};} }
+function refreshSaved(sel){ const all=loadAll(); const s=$("#savedSel"); s.innerHTML=`<option value="">— Gespeicherte Objekte (${Object.keys(all).length}) —</option>`+Object.keys(all).map(k=>`<option ${k===sel?'selected':''}>${k}</option>`).join(""); }
+$("#btnSave").onclick=()=>{ const n=S.name||prompt("Name für dieses Objekt:","Objekt "+new Date().toLocaleDateString("de-AT")); if(!n) return; S.name=n; const all=loadAll(); all[n]=S; localStorage.setItem(LS,JSON.stringify(all)); syncInputs(); refreshSaved(n); };
+$("#btnNew").onclick=()=>{ S=JSON.parse(JSON.stringify(DEFAULTS)); syncInputs(); update(); refreshSaved(); go(0); };
+$("#btnDel").onclick=()=>{ const k=$("#savedSel").value; if(!k) return; if(!confirm(`„${k}“ löschen?`)) return; const all=loadAll(); delete all[k]; localStorage.setItem(LS,JSON.stringify(all)); refreshSaved(); };
+$("#savedSel").onchange=e=>{ const all=loadAll(); const o=all[e.target.value]; if(!o) return; S={...JSON.parse(JSON.stringify(DEFAULTS)),...o,comps:{...DEFAULTS.comps,...o.comps},checks:{...o.checks}}; syncInputs(); update(); };
+$("#btnPrint").onclick=()=>window.print();
+
+buildTabs(); buildBezirk(); buildComps(); buildChecks(); bindInputs(); syncInputs(); refreshSaved(); go(0); update();
+</script>
+</body>
+</html>
