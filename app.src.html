@@ -553,7 +553,7 @@ function update(){
    <tr><td colspan="4">Planung / Bauleitung (${S.planung} %)</td><td class="num">${eur(r.san.plan)}</td></tr>
    <tr><td colspan="4">Reserve (${S.reserve} %)</td><td class="num">${eur(r.san.res)}</td></tr>
    <tr><th colspan="4">Sanierung gesamt ${r.san.override?'<span class="pill warn">manuell überschrieben</span>':''}</th><th class="num">${eur(r.san.total)}</th></tr>`;
-  const sm=r.san.total/r.A; const band= sm<500?"Pinselsanierung (Wien: ca. 300–600 €/m²)": sm<1100?"Standardsanierung (Wien: ca. 700–1.200 €/m²)": sm<1900?"Kernsanierung (Wien: ca. 1.200–2.000 €/m²)":"Luxus-/Komplettsanierung (> 2.000 €/m²)";
+  const sm=r.san.total/r.A; const band= sm<500?"Pinselsanierung (Wien: ca. 300–600 €/m²)": sm<1150?"Standardsanierung (Wien: ca. 700–1.200 €/m²)": sm<2100?"Kernsanierung (Wien: ca. 1.200–2.100 €/m²)":"Luxus-/Komplettsanierung (> 2.100 €/m²)";
   $("#refSan").innerHTML=`Sanierung: <b>${fmt(sm)} €/m²</b> → entspricht <b>${band}</b>${+S.sonderumlage?` · zzgl. Sonderumlage ${eur(+S.sonderumlage)}`:""}.`;
   // Verkauf
   $("#vkHint").textContent=`Referenz: ${fmt(r.refSale)} €/m² (${AUSST[S.ausstattung][1]} +${AUSST[S.ausstattung][0]*100} %, Lage ${r.lfSum>=0?'+':''}${fmt(r.lfSum*100)} %)`;
