@@ -1184,10 +1184,17 @@ window.addEventListener("resize",fitExport);
 window.addEventListener("beforeprint",()=>{ const b=$("#exportBody .rp"); if(b) b.style.zoom=""; });
 window.addEventListener("afterprint",fitExport);
 function closeExport(){ $("#exportModal").classList.remove("open"); document.body.classList.remove("modal-open"); }
+function fileBase(){
+  const n=(S.name||"").replace(/[\/\\:*?"<>|]+/g,"-").replace(/\s+/g," ").trim().slice(0,120);
+  return n || `Flip-Check ${S.bezirk}. Bezirk`;
+}
+const APP_TITLE=document.title;
+window.addEventListener("beforeprint",()=>{ document.title=fileBase(); });
+window.addEventListener("afterprint",()=>{ document.title=APP_TITLE; });
 function downloadHTML(){
   if(!$("#exportModal").classList.contains("open")) openExport();
-  const html=`<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Flip-Check ${esc(S.name||"Bericht")}</title><style>body{margin:0;background:#e9ebef;padding:10mm 0}${REPORT_CSS}@media print{body{background:#fff;padding:0}}@page{size:A4;margin:0}</style></head><body>${$("#exportBody").innerHTML}</body></html>`;
-  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([html],{type:"text/html"})); a.download=`Flip-Check_${(S.name||"Bericht").replace(/[^\wäöüÄÖÜß-]+/g,"_")}.html`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  const html=`<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>${esc(fileBase())}</title><style>body{margin:0;background:#e9ebef;padding:10mm 0}${REPORT_CSS}@media print{body{background:#fff;padding:0}}@page{size:A4;margin:0}</style></head><body>${$("#exportBody").innerHTML}</body></html>`;
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([html],{type:"text/html"})); a.download=`${fileBase()}.html`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
 
 /* ---------- Speichern ---------- */
@@ -1199,7 +1206,7 @@ $("#btnNew").onclick=()=>{ S=JSON.parse(JSON.stringify(DEFAULTS)); syncInputs();
 $("#btnDel").onclick=()=>{ const k=$("#savedSel").value; if(!k) return; if(!confirm(`„${k}“ löschen?`)) return; const all=loadAll(); delete all[k]; localStorage.setItem(LS,JSON.stringify(all)); refreshSaved(); };
 $("#savedSel").onchange=e=>{ const all=loadAll(); const o=all[e.target.value]; if(!o) return; S={...JSON.parse(JSON.stringify(DEFAULTS)),...o,comps:{...DEFAULTS.comps,...o.comps},checks:{...o.checks}}; syncInputs(); update(); };
 $("#btnPrint").onclick=openExport;
-$("#btnPdf").onclick=()=>window.print(); $("#btnHtml").onclick=downloadHTML; $("#btnClose").onclick=closeExport;
+$("#btnPdf").onclick=()=>{ document.title=fileBase(); window.print(); }; $("#btnHtml").onclick=downloadHTML; $("#btnClose").onclick=closeExport;
 let printedFromApp=false;
 window.addEventListener("beforeprint",()=>{ if(!$("#exportModal").classList.contains("open")){ printedFromApp=true; $("#exportBody").innerHTML=reportHTML(); $("#exportModal").classList.add("open"); paginate($("#exportBody")); } });
 window.addEventListener("afterprint",()=>{ if(printedFromApp){ printedFromApp=false; closeExport(); } });
