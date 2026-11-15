@@ -205,6 +205,22 @@ body.modal-open{overflow:hidden}
         <label class="f">Altbau-Charme<select data-k="charme">
           <option value="ja">Ja – Raumhöhe &gt; 3 m, Flügeltüren, Stuck, Fischgrät</option><option value="nein">Nein / nicht zutreffend</option></select></label>
       </div>
+      <h3>Zubehör &amp; Zusätze</h3>
+      <div class="grid">
+        <label class="f">Kellerabteil<select data-k="keller">
+          <option value="ja">Ja – trocken, gut nutzbar</option><option value="feucht">Ja – feucht / klein, nur bedingt nutzbar</option><option value="nein">Kein Kellerabteil</option></select><small>im Bezirks-Ø üblich enthalten</small></label>
+        <label class="f">Dachboden- / Abstellabteil<select data-k="abteil">
+          <option value="nein">Keines (zusätzlich)</option><option value="ja">Ja, zusätzliches Abteil</option></select></label>
+        <label class="f">Garagen- / Stellplatz<select data-k="parken">
+          <option value="keiner">Keiner</option><option value="tg">Tiefgaragen-Einzelplatz</option><option value="duplex">Duplex / Stapelparker</option><option value="frei">Freiplatz im Hof / Carport</option><option value="box">Einzelgarage (Box)</option></select></label>
+        <label class="f">Stellplatz – Zukauf<div class="inrow"><input data-k="parkKauf" type="number" min="0" step="500"><span>€</span></div><small>0 = im Kaufpreis enthalten; sonst Zusatzpreis</small></label>
+        <label class="f">Stellplatz – Wert beim Verkauf<div class="inrow"><input data-k="parkWert" type="number" min="0" step="500" placeholder="Bezirksvorgabe"><span>€</span></div><small id="parkHint">leer = Bezirksvorgabe</small></label>
+        <label class="f">E-Ladestation am Stellplatz<select data-k="eladen">
+          <option value="nein">Nein</option><option value="ja">Ja / vorbereitet</option></select></label>
+        <label class="f">Gemeinschaftsflächen im Haus<select data-k="gemein">
+          <option value="keine">Keine besonderen</option><option value="rad">Fahrrad- / Kinderwagenraum, Waschküche</option><option value="garten">Gemeinschaftsgarten / -dachterrasse</option></select></label>
+        <label class="f">Sonstiges Zubehör (Wert)<div class="inrow"><input data-k="zubSonst" type="number" step="500"><span>€</span></div><small>z. B. mitverkaufte Einbauküche, Motorradplatz</small></label>
+      </div>
       <div class="refbox" id="refLage"></div>
       <h3>Wien-Karte: Ø Wohnungspreis 2025 je Bezirk (€/m²) – Bezirk anklicken zum Auswählen</h3>
       <div class="mapwrap" id="distmap"></div>
@@ -400,6 +416,7 @@ const CHECKS = [
 
 const DEFAULTS = {
   name:"", bezirk:"16", baujahr:"0", vor1945:"ja", flaeche:65, zimmer:2.5, aussen:"nein", stock:"og12", lift:"ja", mikro:"gut", laerm:"normal", grundriss:"gut", charme:"ja",
+  keller:"ja", abteil:"nein", parken:"keiner", parkKauf:0, parkWert:"", eladen:"nein", gemein:"keine", zubSonst:0,
   kaufpreis:165000, maklerKauf:3, notar:1.5, grest:3.5, gbEig:1.1, ltv:70, ltvBasis:"ks", zins:4.2, bankfee:1, gbPfand:1.2,
   preisniveau:"1", fenster:4, tueren:4, reserve:15, planung:3, sanOverride:"",
   comps:{...PRESETS.standard},
@@ -436,8 +453,30 @@ function lageFactors(st){
   f.push({hof:[0.03,"ruhige Hoflage"],normal:[0,"Lärm normal"],laut:[-0.06,"laute Straßenlage"]}[st.laerm]);
   f.push({gut:[0.02,"guter Grundriss"],mittel:[0,"Grundriss mittel"],schlecht:[-0.07,"schwacher Grundriss"]}[st.grundriss]);
   if(st.charme==="ja" && st.baujahr==="0") f.push([0.03,"Altbau-Charme"]);
+  if(st.gemein==="rad") f.push([0.005,"Fahrrad-/Kinderwagenraum"]); else if(st.gemein==="garten") f.push([0.02,"Gemeinschaftsgarten/-terrasse"]);
   if(+(st.comps&&st.comps.klima)>0) f.push([(st.stock==="dg"||st.stock==="og3")?0.03:0.01,"Klimaanlage"]);
   return f.filter(x=>x[0]!==0 || x[1].startsWith("Mikrolage"));
+}
+// Stellplatz Wien je Bezirk: [Kaufpreis TG-Einzelplatz €, Miete netto €/Monat] – Orientierung aus Inseraten 2025/26 (immowelt, ImmoScout24, wohnwahn, Wiener Wohnen)
+const PARK = {1:[65000,250],2:[32000,115],3:[35000,115],4:[40000,130],5:[32000,110],6:[38000,125],7:[40000,140],8:[38000,130],9:[38000,130],10:[24000,90],11:[20000,80],12:[26000,110],13:[32000,110],14:[24000,90],15:[24000,85],16:[24000,85],17:[26000,90],18:[32000,110],19:[35000,120],20:[24000,110],21:[22000,105],22:[24000,115],23:[24000,120]};
+const PARK_TYP = {tg:[1,"Tiefgaragen-Einzelplatz"],duplex:[0.55,"Duplex-/Stapelparker"],frei:[0.45,"Freiplatz / Carport"],box:[1.05,"Einzelgarage"]};
+function zubehoer(st){
+  const it=[]; const bz=st.bezirk;
+  if(st.keller==="nein") it.push(["Kein Kellerabteil",-3000]);
+  else if(st.keller==="feucht") it.push(["Kellerabteil nur bedingt nutzbar",-1500]);
+  if(st.abteil==="ja") it.push(["Dachboden-/Abstellabteil",2000]);
+  let park=0, parkMiete=0;
+  if(st.parken && st.parken!=="keiner"){
+    const t=PARK_TYP[st.parken], ov=st.parkWert!=="" && st.parkWert!=null && +st.parkWert>0;
+    park = ov? +st.parkWert : Math.round(PARK[bz][0]*t[0]/500)*500;
+    parkMiete = PARK[bz][1]*Math.min(1,t[0]+0.15);
+    it.push([t[1]+(ov?" (eigener Wert)":""),park]);
+    if(st.eladen==="ja"){ it.push(["E-Ladestation",1500]); parkMiete+=15; }
+  }
+  if(+st.zubSonst) it.push(["Sonstiges Zubehör",+st.zubSonst]);
+  const wert=it.reduce((a,b)=>a+b[1],0);
+  const inKP=Math.max(0, it.filter(x=>x[1]>0).reduce((a,b)=>a+b[1],0) - (+st.parkKauf>0? park + (st.eladen==="ja"?1500:0) : 0));
+  return {it,wert,park,parkMiete,inKP};
 }
 const AUSST = {std:[0.15,"Standard saniert"],geh:[0.25,"gehoben saniert"],prem:[0.35,"Premium saniert"]};
 
@@ -471,15 +510,16 @@ function calc(st, o={}){
   const ausst = AUSST[st.ausstattung][0];
   const refSale = ref*(1+ausst)*(1+lfSum);
   const vkM2 = (st.vkOverride!=="" && +st.vkOverride>0)? +st.vkOverride : refSale;
-  const sale = vkM2*A*(o.saleMult??1);
+  const zub = zubehoer(st), parkKauf = +st.parkKauf||0, KP = P + parkKauf;
+  const sale = (vkM2*A + zub.wert)*(o.saleMult??1);
   // Kaufnebenkosten
-  const nkMakler = P*(+st.maklerKauf/100)*1.2;
-  const nkNotar = P*(+st.notar/100)*1.2;
-  const nkGrest = P*(+st.grest/100);
-  const nkGb = P*(+st.gbEig/100);
+  const nkMakler = KP*(+st.maklerKauf/100)*1.2;
+  const nkNotar = KP*(+st.notar/100)*1.2;
+  const nkGrest = KP*(+st.grest/100);
+  const nkGb = KP*(+st.gbEig/100);
   const nkAnsch = nkMakler+nkNotar+nkGrest+nkGb;
   const lb = st.ltvBasis||"ks", q=+st.ltv/100;
-  const loanP = (P + (lb==="gesamt"? nkAnsch:0))*q, loanS = (lb==="k"? 0 : sanTotal)*q;
+  const loanP = (KP + (lb==="gesamt"? nkAnsch:0))*q, loanS = (lb==="k"? 0 : sanTotal)*q;
   const loan = loanP+loanS, loanBase = loan/(q||1);
   const nkPfand = loan*1.25*(+st.gbPfand/100);
   const nkBank = loan*(+st.bankfee/100);
@@ -492,11 +532,11 @@ function calc(st, o={}){
   const vkMakler = sale*(+st.maklerVerk/100)*1.2;
   const vkKosten = vkMakler + (+st.marketing);
   const finanz = zinsen + nkPfand + nkBank;
-  const total = P + nkAnsch + sanTotal + finanz + halte + vkKosten;
+  const total = KP + nkAnsch + sanTotal + finanz + halte + vkKosten;
   const gewinnVor = sale - total;
   // Steuern
   let steuer=0, steuerBasis=0;
-  if(st.steuer==="privat"){ steuerBasis = sale - (P+nkAnsch+sanTotal); steuer = Math.max(0,steuerBasis)*0.30; }
+  if(st.steuer==="privat"){ steuerBasis = sale - (KP+nkAnsch+sanTotal); steuer = Math.max(0,steuerBasis)*0.30; }
   else if(st.steuer==="gmbh"){ steuerBasis=gewinnVor; steuer=Math.max(0,gewinnVor)*0.23; }
   else if(st.steuer==="gmbhaus"){ steuerBasis=gewinnVor; const k=Math.max(0,gewinnVor)*0.23; steuer = k + (Math.max(0,gewinnVor)-k)*0.275; }
   else { steuerBasis=gewinnVor; steuer=Math.max(0,gewinnVor)*(+st.grenzsatz/100); }
@@ -508,7 +548,7 @@ function calc(st, o={}){
   const roePa = months>0 ? (Math.pow(Math.max(0.0001,1+roe),12/months)-1) : NaN;
   if(roe<=-1) {}
   const breakEvenM2 = (total - vkMakler)/(A*(1-(+st.maklerVerk/100)*1.2)) ; // approx
-  return {P,A,san,sanTotal,ref,lf,lfSum,ausst,refSale,vkM2,sale,nkMakler,nkNotar,nkGrest,nkGb,nkPfand,nkBank,nkAnsch,loan,loanBase,zinsen,halte,vkMakler,vkKosten,finanz,total,gewinnVor,steuer,steuerBasis,gewinnNach,eigenkapital,marge,roe,roePa:(1+roe)>0?roePa:-1,months,breakEvenM2:(total-vkMakler)/A};
+  return {P,KP,parkKauf,zub,A,san,sanTotal,ref,lf,lfSum,ausst,refSale,vkM2,sale,nkMakler,nkNotar,nkGrest,nkGb,nkPfand,nkBank,nkAnsch,loan,loanBase,zinsen,halte,vkMakler,vkKosten,finanz,total,gewinnVor,steuer,steuerBasis,gewinnNach,eigenkapital,marge,roe,roePa:(1+roe)>0?roePa:-1,months,breakEvenM2:(total-vkMakler-zub.wert)/A};
 }
 function breakEven(st){ // Verkaufspreis/m², bei dem Gewinn vor Steuern = 0
   let lo=0, hi=60000; for(let i=0;i<50;i++){ const mid=(lo+hi)/2; const r=calc({...st,vkOverride:mid}); if(r.gewinnVor>0) hi=mid; else lo=mid;} return hi;
@@ -524,6 +564,9 @@ function risk(st){
   if(st.aussen==="neu") flags.push(["warn","Balkonzubau: Zustimmung aller Wohnungseigentümer bzw. Ersetzung durch das Gericht und Baubewilligung nötig."]);
   if(+st.comps.grundriss===2) flags.push(["info","Neue Raumaufteilung: Bauanzeige/Baubewilligung (BO für Wien) und ggf. Statiker einplanen."]);
   if(+st.comps.heizung===0 && st.checks.gas==2) flags.push(["warn","Keine Zentralheizung, aber kein Heizungs-Gewerk kalkuliert."]);
+  if(st.keller==="nein") flags.push(["info","Kein Kellerabteil: Käufer erwarten meist Abstellfläche – Abstellraum/Einbauschränke in der Wohnung einplanen."]);
+  if(st.parken==="duplex") flags.push(["info","Stapelparker: meist Höhenlimit ~1,50 m (keine SUVs/Kombis) – schmälert Wert und Käuferkreis."]);
+  if(+st.parkKauf>0) flags.push(["info","Stellplatz separat: prüfen, ob eigenes Wohnungseigentumsobjekt (Grundbuch) – nur dann einzeln verkauf- und belehnbar."]);
   if(+st.flaeche<35) flags.push(["info","Sehr kleine Einheit: hohe €/m²-Erlöse möglich, aber Sanierungsfixkosten (Bad, Küche) wiegen schwer."]);
   return {pts,flags,ko};
 }
@@ -622,16 +665,18 @@ function update(){
   const sizeTxt=["< 54 m²","54–77 m²","> 77 m²"][sizeClass(+S.flaeche)], bjTxt=["bis 1960","1961–1990","ab 1991"][+S.baujahr];
   $("#refLage").innerHTML=`<b>Referenz Statistik Austria – ${S.bezirk}. ${d.name}</b>, Baujahr ${bjTxt}, ${sizeTxt}:
    ohne Außenfläche <b>${fmt(refPrice(S,false))} €/m²</b> · mit Außenfläche <b>${fmt(refPrice(S,true))} €/m²</b> (Ø aller Zustände).<br>
-   Lagefaktoren: ${r.lf.map(f=>`${f[1]} <span class="pill ${f[0]>0?'ok':f[0]<0?'bad':'info'}">${f[0]>0?'+':''}${fmt(f[0]*100)} %</span>`).join(" ")} → Summe <b>${r.lfSum>=0?'+':''}${fmt(r.lfSum*100)} %</b>`;
+   Lagefaktoren: ${r.lf.map(f=>`${f[1]} <span class="pill ${f[0]>0?'ok':f[0]<0?'bad':'info'}">${f[0]>0?'+':''}${fmt(f[0]*100)} %</span>`).join(" ")} → Summe <b>${r.lfSum>=0?'+':''}${fmt(r.lfSum*100)} %</b><br>
+   Zubehör: ${r.zub.it.length? r.zub.it.map(x=>`${x[0]} <span class="pill ${x[1]>0?'ok':'bad'}">${x[1]>0?'+':''}${eur(x[1])}</span>`).join(" ")+` → <b>${r.zub.wert>=0?'+':''}${eur(r.zub.wert)}</b> auf den Verkaufserlös` : "Kellerabteil vorhanden, kein Stellplatz – keine Zu-/Abschläge"}${S.parken!=="keiner"?` · Stellplatz-Vorgabe ${S.bezirk}. Bezirk: TG-Platz ca. ${eur(PARK[S.bezirk][0])}, Miete ca. ${eur(PARK[S.bezirk][1])}/Monat`:""}`;
+  $("#parkHint").textContent = S.parken!=="keiner" ? `leer = ${eur(Math.round(PARK[S.bezirk][0]*PARK_TYP[S.parken][0]/500)*500)} (Vorgabe ${S.bezirk}. Bezirk)` : "leer = Bezirksvorgabe";
   // Kauf refbox
-  const kpM2=r.P/r.A; const scopeM2=r.sanTotal/r.A;
+  const kpM2=(r.P-r.zub.inKP)/r.A; const scopeM2=r.sanTotal/r.A;
   const abschlag = scopeM2<400?0.92: scopeM2<900?0.82: scopeM2<1500?0.74:0.66;
   const fairM2 = refPrice(S,false)*(1+r.lfSum)*abschlag;
   const diff = kpM2/fairM2-1;
-  $("#refKauf").innerHTML=`Kaufpreis <b>${fmt(kpM2)} €/m²</b> · Bezirks-Ø (gleiche Klasse, alle Zustände) <b>${fmt(refPrice(S,false))} €/m²</b> → ${pct(kpM2/refPrice(S,false)-1)} <br>
+  $("#refKauf").innerHTML=`Kaufpreis <b>${fmt(kpM2)} €/m²</b>${r.zub.inKP?` <span class="muted">(ohne mitgekauftes Zubehör ${eur(r.zub.inKP)})</span>`:""} · Bezirks-Ø (gleiche Klasse, alle Zustände) <b>${fmt(refPrice(S,false))} €/m²</b> → ${pct(kpM2/refPrice(S,false)-1)} <br>
    Fairer Ankaufspreis bei diesem Sanierungsumfang (Annahme: −${fmt((1-abschlag)*100)} % vs. Ø, lagebereinigt): <b>${fmt(fairM2)} €/m²</b> ≈ <b>${eur(fairM2*r.A)}</b>
    <span class="pill ${diff<=-0.05?'ok':diff<=0.05?'warn':'bad'}">${diff<=0?'':'+'}${pct(diff)} ${diff<=-0.05?'unter Markt':diff<=0.05?'marktüblich':'über Markt'}</span><br>
-   Kaufnebenkosten: <b>${eur(r.nkAnsch)}</b> (${pct(r.nkAnsch/r.P)}) + Finanzierungsnebenkosten ${eur(r.nkPfand+r.nkBank)}<br>
+   Kaufnebenkosten: <b>${eur(r.nkAnsch)}</b> (${pct(r.nkAnsch/r.KP)}) + Finanzierungsnebenkosten ${eur(r.nkPfand+r.nkBank)}<br>
    <b>Kredit ${eur(r.loan)}</b> = ${fmt(+S.ltv)} % × ${eur(r.loanBase)} (${{k:"Kaufpreis",ks:"Kaufpreis + Sanierung",gesamt:"Kaufpreis + Kaufnebenkosten + Sanierung"}[S.ltvBasis||"ks"]}) · entspricht ${pct(r.loan/(r.total-r.vkMakler))} des Kapitalbedarfs<br>
    Eigenkapitalbedarf <b>${eur(r.eigenkapital)}</b> = Kapitalbedarf ${eur(r.total-r.vkMakler)} (alle Kosten bis zum Verkauf; Verkäufer-Makler zahlt der Erlös) − Kredit`;
   // Sanierung table
@@ -644,7 +689,7 @@ function update(){
   $("#refSan").innerHTML=`Sanierung: <b>${fmt(sm)} €/m²</b> → entspricht <b>${band}</b>${+S.sonderumlage?` · zzgl. Sonderumlage ${eur(+S.sonderumlage)}`:""}.`;
   // Verkauf
   $("#vkHint").textContent=`Referenz: ${fmt(r.refSale)} €/m² (${AUSST[S.ausstattung][1]} +${AUSST[S.ausstattung][0]*100} %, Lage ${r.lfSum>=0?'+':''}${fmt(r.lfSum*100)} %)`;
-  $("#refVerk").innerHTML=`Verkaufserlös: <b>${fmt(r.vkM2)} €/m² × ${fmt(r.A)} m² = ${eur(r.sale)}</b> · Projektdauer <b>${r.months} Monate</b> · Break-even-Verkaufspreis <b>${fmt(ev.be)} €/m²</b><br>
+  $("#refVerk").innerHTML=`Verkaufserlös: <b>${fmt(r.vkM2)} €/m² × ${fmt(r.A)} m²${r.zub.wert?` ${r.zub.wert>0?'+':'−'} Zubehör ${eur(Math.abs(r.zub.wert))}`:""} = ${eur(r.sale)}</b> · Projektdauer <b>${r.months} Monate</b> · Break-even-Verkaufspreis <b>${fmt(ev.be)} €/m²</b><br>
    Plausibilität: Ø Neubau/Erstbezug ab 1991 im ${S.bezirk}. Bezirk: <b>${fmt(DATA[S.bezirk][S.aussen!=="nein"?"mit":"ohne"][6+sizeClass(+S.flaeche)])} €/m²</b> – ein sanierter Altbau liegt meist in dieser Größenordnung.`;
   renderSide(ev); renderReport(ev); renderDeal(ev); renderRent(ev);
   const ms=$("#mobScore"); ms.className=ev.cls; ms.innerHTML=`${ev.s} Punkte<small>${esc(ev.txt)}</small>`;
@@ -671,7 +716,7 @@ function renderSide(ev){
 
 function renderReport(ev){
   const r=ev.r, d=DATA[S.bezirk];
-  const parts=[["Kaufpreis",r.P,"#1d2330"],["Kaufnebenkosten",r.nkAnsch,"#6b7385"],["Sanierung",r.sanTotal,"#c8102e"],["Finanzierung",r.finanz,"#e39a10"],["Haltekosten",r.halte,"#7aa5d6"],["Verkaufskosten",r.vkKosten,"#9b7ad6"]];
+  const parts=[[r.parkKauf?"Kaufpreis inkl. Stellplatz":"Kaufpreis",r.KP,"#1d2330"],["Kaufnebenkosten",r.nkAnsch,"#6b7385"],["Sanierung",r.sanTotal,"#c8102e"],["Finanzierung",r.finanz,"#e39a10"],["Haltekosten",r.halte,"#7aa5d6"],["Verkaufskosten",r.vkKosten,"#9b7ad6"]];
   const tot=parts.reduce((a,b)=>a+b[1],0);
   const c5=cagr(d.trend,5,10), c10=cagr(d.trend,0,10);
   $("#report").innerHTML=`
@@ -684,7 +729,7 @@ function renderReport(ev){
    <div class="legend">${parts.map(p=>`<span><i style="background:${p[2]}"></i>${p[0]} ${eur(p[1])}</span>`).join("")}</div>
    <div class="two" style="margin-top:14px">
     <table><tbody>
-     <tr><td>Kaufpreis</td><td class="num">${eur(r.P)}</td></tr>
+     <tr><td>Kaufpreis</td><td class="num">${eur(r.P)}</td></tr>${r.parkKauf?`<tr><td>Stellplatz (Zukauf)</td><td class="num">${eur(r.parkKauf)}</td></tr>`:""}
      <tr><td class="muted">Grunderwerbsteuer ${S.grest} %</td><td class="num">${eur(r.nkGrest)}</td></tr>
      <tr><td class="muted">Grundbuch Eigentum ${S.gbEig} %</td><td class="num">${eur(r.nkGb)}</td></tr>
      <tr><td class="muted">Vertragserrichtung/Treuhand inkl. USt</td><td class="num">${eur(r.nkNotar)}</td></tr>
@@ -763,7 +808,7 @@ function gaugeSVG(score, cls){
    <text x="18" y="${cy+16}" font-size="9" fill="#9aa1b2">0</text><text x="222" y="${cy+16}" font-size="9" fill="#9aa1b2" text-anchor="end">100</text></svg>`;
 }
 const COSTCOL={kauf:"#1d2330",nk:"#6b7385",san:"#c8102e",fin:"#e39a10",halt:"#7aa5d6",vk:"#9b7ad6"};
-function costParts(r){ return [["Kaufpreis",r.P,COSTCOL.kauf],["Kaufnebenkosten",r.nkAnsch,COSTCOL.nk],["Sanierung",r.sanTotal,COSTCOL.san],["Finanzierung",r.finanz,COSTCOL.fin],["Haltekosten",r.halte,COSTCOL.halt],["Verkaufskosten",r.vkKosten,COSTCOL.vk]]; }
+function costParts(r){ return [[r.parkKauf?"Kaufpreis inkl. Stellplatz":"Kaufpreis",r.KP,COSTCOL.kauf],["Kaufnebenkosten",r.nkAnsch,COSTCOL.nk],["Sanierung",r.sanTotal,COSTCOL.san],["Finanzierung",r.finanz,COSTCOL.fin],["Haltekosten",r.halte,COSTCOL.halt],["Verkaufskosten",r.vkKosten,COSTCOL.vk]]; }
 function waterfallSVG(r){
   const parts=costParts(r), W=680,H=240,top=22,bot=46,left=8; const mx=Math.max(r.total,r.sale)*1.08;
   const y=v=>top+(H-top-bot)*(1-v/mx), n=parts.length+3, bw=(W-left*2)/n*0.66, gap=(W-left*2)/n;
@@ -916,15 +961,16 @@ function rentCalc(st, r){
         ["Realistisch", real, 1.5, "Angebotsmiete Bezirk −5 % (Vertragsabschlag), lage- und ausstattungsbereinigt"],
         ["Optimistisch", real*1.08, 0.5, "Top-Präsentation, möbliert/hochwertig, rascher Abschluss"]];
   }
-  const invest = r.P + r.nkAnsch + r.sanTotal + r.nkPfand + r.nkBank;
+  const invest = r.KP + r.nkAnsch + r.sanTotal + r.nkPfand + r.nkBank;
   const rate = annuity(r.loan, +st.zins, +st.tilgJahre||25), zinsM = r.loan*(+st.zins/100)/12;
   const nonUml = (+st.nonUml||0)*A;
-  const rows = sc.map(([n,m2,leer,desc])=>{
-    const miete=m2*A, jahr=miete*12, eff=jahr*(1-leer/12*0.25)-nonUml*12; // Leerstand: Monate alle 4 Jahre
+  const pmF=[0.85,1,1.1];
+  const rows = sc.map(([n,m2,leer,desc],i)=>{
+    const pm=(r.zub.parkMiete||0)*pmF[i], miete=m2*A+pm, jahr=miete*12, eff=jahr*(1-leer/12*0.25)-nonUml*12; // Leerstand: Monate alle 4 Jahre
     const brutto=jahr/invest, netto=eff/invest, cf=eff/12-rate;
     const ek=invest-r.loan; const ekRend=(eff - zinsM*12)/ek;
-    const gesamt=(m2+bkN)*1.1*A;
-    return {n,m2,miete,gesamt,jahr,eff,brutto,netto,cf,ekRend,leer,desc,faktor:invest/jahr};
+    const gesamt=(m2+bkN)*1.1*A + pm*1.2;
+    return {n,m2,pm,miete,gesamt,jahr,eff,brutto,netto,cf,ekRend,leer,desc,faktor:invest/jahr};
   });
   const real=rows[1]; const grade = real.brutto>=0.05?["ok","gut vermietbar"]: real.brutto>=0.035?["warn","durchschnittlich"]:["bad","schwache Rendite"];
   return {regime, askB, freiNet, lz, lzOK, befr, invest, rate, zinsM, nonUml, rows, grade, bkN, ask};
@@ -941,8 +987,9 @@ function rentTable(rc, cls=""){
   const g=v=>v>=0?'var(--ok,#137a3f)':'var(--bad,#b42020)';
   return `<table><thead><tr><th></th>${R.map(r=>`<th class="${cls||'num'}">${r.n}</th>`).join("")}</tr></thead><tbody>
    <tr><td>Hauptmietzins netto</td>${td(r=>fmt(r.m2,2)+" €/m²")}</tr>
-   <tr><td>Nettomiete / Monat</td>${td(r=>eur(r.miete))}</tr>
-   <tr><td class="muted">Gesamtmiete für Mieter (inkl. BK + 10 % USt)</td>${td(r=>eur(r.gesamt))}</tr>
+   ${R[1].pm?`<tr><td class="muted">davon Stellplatz (netto, frei vermietbar)</td>${td(r=>eur(r.pm))}</tr>`:""}
+   <tr><td>Nettomiete / Monat${R[1].pm?" inkl. Stellplatz":""}</td>${td(r=>eur(r.miete))}</tr>
+   <tr><td class="muted">Gesamtmiete für Mieter (inkl. BK + 10 % USt${R[1].pm?", Stellplatz 20 % USt":""})</td>${td(r=>eur(r.gesamt))}</tr>
    <tr><td>Jahresnettomiete</td>${td(r=>eur(r.jahr))}</tr>
    <tr><td class="muted">Leerstand bei Mieterwechsel</td>${td(r=>fmt(r.leer,1)+" Mo.")}</tr>
    <tr><td>Bruttorendite</td>${td(r=>pct(r.brutto))}</tr>
@@ -1020,7 +1067,7 @@ function reportHTML(){
   const kpi=(k,v,c="")=>`<div class="rp-kpi"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`;
   const sizeTxt=["< 54 m²","54–77 m²","> 77 m²"][sizeClass(+S.flaeche)], bjTxt=["bis 1960","1961–1990","ab 1991"][+S.baujahr];
   const stockTxt={sout:"Souterrain",eg:"Erdgeschoß",og12:"1.–2. Stock",og3:"3. Stock +",dg:"Dachgeschoß"}[S.stock];
-  const kpM2=r.P/r.A, scopeM2=r.sanTotal/r.A, abschlag = scopeM2<400?0.92: scopeM2<900?0.82: scopeM2<1500?0.74:0.66, fairM2=refPrice(S,false)*(1+r.lfSum)*abschlag;
+  const kpM2=(r.P-r.zub.inKP)/r.A, scopeM2=r.sanTotal/r.A, abschlag = scopeM2<400?0.92: scopeM2<900?0.82: scopeM2<1500?0.74:0.66, fairM2=refPrice(S,false)*(1+r.lfSum)*abschlag;
   const c10=cagr(d.trend,0,10), c5=cagr(d.trend,5,10);
   const rank=Object.keys(DATA).sort((a,b)=>DATA[b].trend[10]-DATA[a].trend[10]).indexOf(String(S.bezirk))+1;
   const flags=ev.rk.flags.map(f=>`<li><span class="pill ${f[0]==='ko'?'bad':f[0]}">${f[0]==='ko'?'K.O.':f[0]==='bad'?'HOCH':f[0]==='warn'?'MITTEL':'INFO'}</span><span>${f[1]}</span></li>`).join("");
@@ -1041,6 +1088,7 @@ function reportHTML(){
      <tr><td>Bezirk</td><td>${S.bezirk}. ${esc(d.name)}</td></tr><tr><td>Wohnfläche / Zimmer</td><td>${fmt(r.A)} m² / ${esc(S.zimmer)}</td></tr>
      <tr><td>Baujahr-Klasse / Größe</td><td>${bjTxt} / ${sizeTxt}</td></tr><tr><td>Stockwerk / Lift</td><td>${stockTxt} / ${{ja:"ja",nein:"nein",geplant:"geplant"}[S.lift]}</td></tr>
      <tr><td>Außenfläche</td><td>${{nein:"keine",ja:"vorhanden",neu:"wird errichtet"}[S.aussen]}</td></tr><tr><td>Ausstattung nach Sanierung</td><td>${AUSST[S.ausstattung][1]}</td></tr>
+     <tr><td>Zubehör</td><td>${[S.keller==="nein"?"kein Kellerabteil":S.keller==="feucht"?"Kellerabteil (bedingt nutzbar)":"Kellerabteil",S.abteil==="ja"?"Abstellabteil":"",S.parken!=="keiner"?PARK_TYP[S.parken][1]+(r.parkKauf?" (Zukauf "+eur(r.parkKauf)+")":""):"kein Stellplatz",S.eladen==="ja"&&S.parken!=="keiner"?"E-Laden":"",+S.zubSonst?"Sonstiges "+eur(+S.zubSonst):""].filter(Boolean).join(", ")}${r.zub.wert?` <span class="muted">(${r.zub.wert>0?'+':'−'}${eur(Math.abs(r.zub.wert))} Erlös)</span>`:""}</td></tr>
      <tr><td>Besteuerung</td><td>${{privat:"Privat – ImmoESt 30 %",gmbh:"GmbH – KöSt 23 % (ohne Ausschüttung)",gmbhaus:"GmbH inkl. Ausschüttung",gewerb:"Gewerblich – ESt "+S.grenzsatz+" %"}[S.steuer]}</td></tr></tbody></table></div>
     <div><h3>Die drei wichtigsten Zahlen</h3><table class="facts"><tbody>
      <tr><td>Max. Kaufpreis für ${S.zielmarge} % Marge</td><td><b>${eur(ev.maxKP)}</b> ${ev.maxKP<r.P?`<span class="pill bad">−${eur(r.P-ev.maxKP)}</span>`:'<span class="pill ok">passt</span>'}</td></tr>
@@ -1060,13 +1108,13 @@ function reportHTML(){
    </div>
    <h3>Detaillierte Kostenaufstellung</h3>
    <div class="rp-grid2"><table><tbody>
-     <tr><td>Kaufpreis</td><td class="n">${eur(r.P)}</td></tr><tr><td class="muted">Grunderwerbsteuer ${S.grest} %</td><td class="n">${eur(r.nkGrest)}</td></tr>
+     <tr><td>Kaufpreis</td><td class="n">${eur(r.P)}</td></tr>${r.parkKauf?`<tr><td>Stellplatz (Zukauf)</td><td class="n">${eur(r.parkKauf)}</td></tr>`:""}<tr><td class="muted">Grunderwerbsteuer ${S.grest} %</td><td class="n">${eur(r.nkGrest)}</td></tr>
      <tr><td class="muted">Grundbucheintragung ${S.gbEig} %</td><td class="n">${eur(r.nkGb)}</td></tr><tr><td class="muted">Vertragserrichtung / Treuhand</td><td class="n">${eur(r.nkNotar)}</td></tr>
      <tr><td class="muted">Makler Kauf</td><td class="n">${eur(r.nkMakler)}</td></tr><tr><td>Sanierung${+S.sonderumlage?' inkl. Sonderumlage':''}</td><td class="n">${eur(r.sanTotal)}</td></tr>
    </tbody></table><table><tbody>
      <tr><td class="muted">Zinsen (${S.zins} %, ${r.months} Mo.)</td><td class="n">${eur(r.zinsen)}</td></tr><tr><td class="muted">Pfandrecht + Bankspesen</td><td class="n">${eur(r.nkPfand+r.nkBank)}</td></tr>
      <tr><td class="muted">Betriebskosten Haltedauer</td><td class="n">${eur(r.halte)}</td></tr><tr><td class="muted">Makler Verkauf + Marketing</td><td class="n">${eur(r.vkKosten)}</td></tr>
-     <tr class="sum"><td>Gesamtkosten</td><td class="n">${eur(r.total)}</td></tr><tr><td>Verkaufserlös (${fmt(r.vkM2)} €/m²)</td><td class="n">${eur(r.sale)}</td></tr>
+     <tr class="sum"><td>Gesamtkosten</td><td class="n">${eur(r.total)}</td></tr><tr><td>Verkaufserlös (${fmt(r.vkM2)} €/m²${r.zub.wert?` ${r.zub.wert>0?'+':'−'} Zubehör ${eur(Math.abs(r.zub.wert))}`:""})</td><td class="n">${eur(r.sale)}</td></tr>
    </tbody></table></div>
    <h3>Sanierungsbudget (${fmt(r.san.total/r.A)} €/m²)</h3>
    ${(()=>{ const rows=r.san.rows.filter(x=>x.cost>0).map(x=>[x.c.l,x.opt[0],x.cost]);
