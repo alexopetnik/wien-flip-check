@@ -2,14 +2,22 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%23c8102e%22/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flip-Check">
+<meta name="theme-color" content="#1d2330">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="__TOUCHICON__">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<link rel="icon" href="__FAVICON__">
 <title>Wien Flip-Check – Sanierungsobjekte bewerten</title>
-<style>
+<style id="appcss">
 :root{--bg:#f4f5f7;--card:#fff;--ink:#1d2330;--muted:#6b7385;--line:#e3e6ec;--pri:#c8102e;--pri2:#9e0c24;--ok:#1a8f4c;--warn:#d98a00;--bad:#c62828;--chip:#f0f2f6}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
-header{background:#1d2330;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header{background:#1d2330;color:#fff;padding:calc(14px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) 14px calc(24px + env(safe-area-inset-left));display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 header h1{font-size:18px;margin:0;font-weight:650;letter-spacing:.2px}
 header h1 span{color:#ff5c73}
 header .sub{color:#aeb6c8;font-size:12.5px}
@@ -86,25 +94,72 @@ aside{position:sticky;top:16px;align-self:start}
 .small{font-size:12px}
 .src li{margin-bottom:6px}
 svg text{font-family:inherit}
-.distmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:8px}
-.distmap div{border-radius:8px;padding:6px 8px;font-size:12px;cursor:pointer;border:2px solid transparent;color:#1d2330}
-.distmap div.sel{border-color:var(--ink)}
-.distmap div b{display:block;font-size:13px}
-@media print{header .actions,nav.tabs,.navbtns,.noprint{display:none!important}main{display:block}.page{display:block!important}aside{position:static}.card{break-inside:avoid}}
+.mapwrap{max-width:720px;margin:6px auto 0}
+.mapwrap path:hover{opacity:.82}
+#exportModal{display:none;position:fixed;inset:0;background:rgba(20,24,33,.72);z-index:50;overflow:auto}
+#exportModal.open{display:block}
+#exportModal .bar{height:auto;overflow:visible;border-radius:0;margin:0;position:sticky;top:0;z-index:2;background:#1d2330;color:#fff;display:flex;gap:10px;align-items:center;padding:10px 20px}
+#exportModal .bar b{margin-right:auto}
+#exportBody{padding:20px 0}
+body.modal-open{overflow:hidden}
+.brandbox{display:flex;align-items:center;gap:12px}.brandbox .logo{flex:0 0 auto;border-radius:9px;box-shadow:0 0 0 1px #3a4358}
+#mobScore{display:none}
+@media(max-width:1050px){main{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){
+ body{font-size:15px;-webkit-text-size-adjust:100%}
+ header{padding:calc(10px + env(safe-area-inset-top)) 12px 10px;gap:10px}
+ header h1{font-size:19px}header .sub{display:none}
+ .brandbox .logo{width:34px;height:34px}
+ header .actions{margin-left:0;width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+ header .actions select{grid-column:1/-1;min-height:40px}header .actions #btnPrint{grid-column:1/-1}
+ button,.btn{min-height:42px;touch-action:manipulation}
+ main{padding:0 10px calc(78px + env(safe-area-inset-bottom));gap:12px}
+ nav.tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:0;z-index:20;background:var(--bg);margin:0 -10px 10px;padding:10px;box-shadow:0 1px 0 var(--line)}
+ nav.tabs::-webkit-scrollbar{display:none}
+ nav.tabs button{flex:0 0 auto;min-height:38px}
+ .card{padding:14px 12px;border-radius:12px;margin-bottom:12px}
+ .grid{grid-template-columns:1fr;gap:12px}
+ label.f input,label.f select,table.comp select,table.comp input,.check select,select{font-size:16px;min-height:42px}
+ .card table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ th,td{padding:7px 6px}
+ table.comp td.desc{display:none}
+ .check{flex-wrap:wrap}.check select{min-width:0;width:100%}
+ .kpis,.kpis[style]{grid-template-columns:1fr 1fr!important}
+ .verdict .big{font-size:20px}
+ .presets button{flex:1 1 45%}
+ .navbtns{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;gap:8px;align-items:center;background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom))}
+ .navbtns button{flex:1}
+ #mobScore{display:block;flex:1.3;font-weight:700;color:#fff;border:0;padding:6px 8px;line-height:1.15;font-size:13px}
+ #mobScore small{display:block;font-weight:500;font-size:11px;opacity:.9}
+ #mobScore.ok{background:var(--ok)}#mobScore.warn{background:var(--warn)}#mobScore.bad{background:var(--bad)}
+ #exportModal .bar{flex-wrap:wrap;padding:calc(8px + env(safe-area-inset-top)) 10px 8px}
+ #exportModal .bar b{width:100%}
+ #exportModal{background:#3a3f4b}
+ #exportBody{padding:10px 0;font-size:14px}
+ #exportModal .bar button{flex:1 1 auto}
+}
+@media print{
+ @page{size:A4;margin:0}
+ body{background:#fff}
+ body>header,body>main{display:none!important}
+ #exportModal{display:block!important;position:static;background:none;overflow:visible}
+ #exportModal .bar{display:none}
+ #exportBody{padding:0}
+}
 </style>
 </head>
 <body>
 <header>
-  <div>
+  <div class="brandbox">__LOGO_HTML__<div>
     <h1>Wien <span>Flip-Check</span></h1>
     <div class="sub">Kauf → Sanierung → Verkauf · kalibriert auf die 23 Wiener Bezirke (Statistik Austria, Transaktionsdaten 2021–2025)</div>
-  </div>
+  </div></div>
   <div class="actions">
     <select id="savedSel" title="Gespeicherte Objekte" style="font:inherit;padding:7px;border-radius:8px;background:#2b3345;color:#fff;border:1px solid #3a4358"></select>
     <button id="btnSave">Speichern</button>
     <button id="btnNew">Neues Objekt</button>
     <button id="btnDel">Löschen</button>
-    <button id="btnPrint">Drucken / PDF</button>
+    <button id="btnPrint" class="pri" style="background:#c8102e;border-color:#c8102e">Bericht exportieren</button>
   </div>
 </header>
 
@@ -148,8 +203,8 @@ svg text{font-family:inherit}
           <option value="ja">Ja – Raumhöhe &gt; 3 m, Flügeltüren, Stuck, Fischgrät</option><option value="nein">Nein / nicht zutreffend</option></select></label>
       </div>
       <div class="refbox" id="refLage"></div>
-      <h3>Bezirksvergleich (Ø Wohnungspreis 2025 alle Baujahre, €/m²) – klicken zum Auswählen</h3>
-      <div class="distmap" id="distmap"></div>
+      <h3>Wien-Karte: Ø Wohnungspreis 2025 je Bezirk (€/m²) – Bezirk anklicken zum Auswählen</h3>
+      <div class="mapwrap" id="distmap"></div>
     </div>
   </div>
 
@@ -167,7 +222,8 @@ svg text{font-family:inherit}
       </div>
       <h3>Finanzierung</h3>
       <div class="grid">
-        <label class="f">Fremdfinanzierungsanteil<div class="inrow"><input data-k="ltv" type="number" min="0" max="100" step="5"><span>% von Kauf + Sanierung</span></div></label>
+        <label class="f">Fremdfinanzierungsanteil (Bank finanziert)<div class="inrow"><input data-k="ltv" type="number" min="0" max="100" step="5"><span>%</span></div></label>
+        <label class="f">… bezogen auf<select data-k="ltvBasis"><option value="k">Kaufpreis</option><option value="ks">Kaufpreis + Sanierung</option><option value="gesamt">Kaufpreis + Kaufnebenkosten + Sanierung</option></select></label>
         <label class="f">Zinssatz<div class="inrow"><input data-k="zins" type="number" step="0.05"><span>% p. a.</span></div></label>
         <label class="f">Bearbeitungsgebühr / Schätzung<div class="inrow"><input data-k="bankfee" type="number" step="0.1"><span>% vom Kredit</span></div></label>
         <label class="f">Pfandrechtseintragung<div class="inrow"><input data-k="gbPfand" type="number" step="0.1"><span>% vom Pfandbetrag</span></div><small>Pfandbetrag ≈ 125 % des Kredits</small></label>
@@ -254,7 +310,28 @@ svg text{font-family:inherit}
     <div class="card" id="report"></div>
   </div>
 
-  <div class="navbtns noprint"><button id="prev">← Zurück</button><button class="pri" id="next">Weiter →</button></div>
+  <!-- 7 VERMIETUNG -->
+  <div class="page" data-title="Vermietung" id="pgRent">
+    <div class="card"><h2>Vermietung nach Sanierung</h2>
+      <p class="hint">Was bringt die Wohnung, wenn du sie nach der Sanierung vermietest statt verkaufst (oder der Verkauf nicht klappt)? Drei Mietszenarien, berechnet mit Wiener Angebotsmieten je Bezirk bzw. dem Richtwert-Mietrecht.</p>
+      <div class="grid">
+        <label class="f">Mietrecht<select data-k="mietRecht"><option value="auto">automatisch (aus Baujahr/Stockwerk)</option><option value="rw">Richtwert (MRG-Vollanwendung)</option><option value="frei">freier Mietzins</option></select></label>
+        <label class="f">Mietvertrag<select data-k="befristet"><option value="ja">befristet (3+ Jahre)</option><option value="nein">unbefristet</option></select><small>Richtwert: befristet −25 %</small></label>
+        <label class="f">Lagezuschlag<div class="inrow"><input data-k="lagezuschlag" type="number" step="0.1" placeholder="Bezirksvorgabe"><span>€/m²</span></div><small>leer = Bezirksvorgabe</small></label>
+        <label class="f">Nicht umlagefähige Kosten<div class="inrow"><input data-k="nonUml" type="number" step="0.1"><span>€/m²/Mo.</span></div><small>Reparaturrücklage, Verwaltung, Instandhaltung</small></label>
+        <label class="f">Kreditlaufzeit bei Vermietung<div class="inrow"><input data-k="tilgJahre" type="number" step="1"><span>Jahre</span></div></label>
+      </div>
+      <div id="rentOut"></div>
+    </div>
+  </div>
+
+  <!-- 8 DEAL -->
+  <div class="page" data-title="Deal verbessern">
+    <div class="card" id="deal"></div>
+  </div>
+
+
+  <div class="navbtns noprint"><button id="prev">← Zurück</button><button id="mobScore" onclick="document.querySelector('aside').scrollIntoView({behavior:'smooth'})"></button><button class="pri" id="next">Weiter →</button></div>
 
   <div class="card small muted" style="margin-top:18px">
     <b>Quellen &amp; Annahmen</b>
@@ -270,9 +347,11 @@ svg text{font-family:inherit}
 
 <aside id="side"></aside>
 </main>
+<div id="exportModal"><div class="bar"><b>Bericht-Vorschau (A4)</b><button class="pri" id="btnPdf">Als PDF speichern / drucken</button><button id="btnHtml">Als HTML herunterladen</button><button id="btnClose">Schließen</button></div><div id="exportBody"></div></div>
 
 <script>
 const DATA = __DATA__;
+const MAP = __MAP__;
 const YEARS = [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
 
 // Sanierungs-Gewerke: [key, label, options:[label, factor], unitPrice, unit, desc]
@@ -318,12 +397,13 @@ const CHECKS = [
 
 const DEFAULTS = {
   name:"", bezirk:"16", baujahr:"0", vor1945:"ja", flaeche:65, zimmer:2.5, aussen:"nein", stock:"og12", lift:"ja", mikro:"gut", laerm:"normal", grundriss:"gut", charme:"ja",
-  kaufpreis:165000, maklerKauf:3, notar:1.5, grest:3.5, gbEig:1.1, ltv:70, zins:4.2, bankfee:1, gbPfand:1.2,
+  kaufpreis:165000, maklerKauf:3, notar:1.5, grest:3.5, gbEig:1.1, ltv:70, ltvBasis:"ks", zins:4.2, bankfee:1, gbPfand:1.2,
   preisniveau:"1", fenster:4, tueren:4, reserve:15, planung:3, sanOverride:"",
   comps:{...PRESETS.standard},
   checks:{}, sonderumlage:0,
   ausstattung:"geh", vkOverride:"", mVor:2, mBau:4, mVerk:4, bk:3.6, maklerVerk:3, marketing:3500,
   steuer:"privat", grenzsatz:48, zielmarge:20,
+  mietRecht:"auto", befristet:"ja", lagezuschlag:"", nonUml:1.2, tilgJahre:25,
 };
 delete DEFAULTS.comps.reserve; delete DEFAULTS.comps.planung;
 
@@ -353,6 +433,7 @@ function lageFactors(st){
   f.push({hof:[0.03,"ruhige Hoflage"],normal:[0,"Lärm normal"],laut:[-0.06,"laute Straßenlage"]}[st.laerm]);
   f.push({gut:[0.02,"guter Grundriss"],mittel:[0,"Grundriss mittel"],schlecht:[-0.07,"schwacher Grundriss"]}[st.grundriss]);
   if(st.charme==="ja" && st.baujahr==="0") f.push([0.03,"Altbau-Charme"]);
+  if(+(st.comps&&st.comps.klima)>0) f.push([(st.stock==="dg"||st.stock==="og3")?0.03:0.01,"Klimaanlage"]);
   return f.filter(x=>x[0]!==0 || x[1].startsWith("Mikrolage"));
 }
 const AUSST = {std:[0.15,"Standard saniert"],geh:[0.25,"gehoben saniert"],prem:[0.35,"Premium saniert"]};
@@ -366,9 +447,10 @@ function sanierung(st){
     const cost = opt[1]*unitP*qty*pn;
     rows.push({c,sel,opt,unitP,qty,cost}); base+=cost;
   }
+  const extra = ({std:0,geh:120,prem:300}[st.ausstattung]||0)*A*pn; base+=extra;
   const plan = base*(+st.planung/100); const res=(base+plan)*(+st.reserve/100);
   const total = st.sanOverride!=="" && st.sanOverride!=null && !isNaN(+st.sanOverride) && +st.sanOverride>0 ? +st.sanOverride : base+plan+res;
-  return {rows,base,plan,res,total,override: total!==base+plan+res};
+  return {rows,base,extra,plan,res,total,override: total!==base+plan+res};
 }
 function scope(st){ // Anteil Sanierungsumfang 0..1 -> Ankaufsabschlag
   const s=sanierung(st); const perM = s.total/(+st.flaeche);
@@ -381,7 +463,7 @@ function calc(st, o={}){
   const san = sanierung(st);
   const sanTotal = san.total*(o.sanMult??1) + (+st.sonderumlage||0);
   const withOut = st.aussen!=="nein";
-  const ref = refPrice(st, withOut);
+  const ref = st.aussen==="neu" ? Math.min(refPrice(st,true), refPrice(st,false)*1.08) : refPrice(st, withOut);
   const lf = lageFactors(st); const lfSum = lf.reduce((a,b)=>a+b[0],0);
   const ausst = AUSST[st.ausstattung][0];
   const refSale = ref*(1+ausst)*(1+lfSum);
@@ -392,15 +474,16 @@ function calc(st, o={}){
   const nkNotar = P*(+st.notar/100)*1.2;
   const nkGrest = P*(+st.grest/100);
   const nkGb = P*(+st.gbEig/100);
-  const loan = (P+sanTotal)*(+st.ltv/100);
+  const nkAnsch = nkMakler+nkNotar+nkGrest+nkGb;
+  const lb = st.ltvBasis||"ks", q=+st.ltv/100;
+  const loanP = (P + (lb==="gesamt"? nkAnsch:0))*q, loanS = (lb==="k"? 0 : sanTotal)*q;
+  const loan = loanP+loanS, loanBase = loan/(q||1);
   const nkPfand = loan*1.25*(+st.gbPfand/100);
   const nkBank = loan*(+st.bankfee/100);
-  const nkAnsch = nkMakler+nkNotar+nkGrest+nkGb;
   // Zeit
   const mVor=+st.mVor, mBau=+st.mBau, mVerk=+st.mVerk+(o.extraMonths||0);
   const months = mVor+mBau+mVerk;
   const r = +st.zins/100/12;
-  const loanP = P*(+st.ltv/100), loanS = sanTotal*(+st.ltv/100);
   const zinsen = loanP*r*months + loanS*r*(mBau*0.5 + mVerk);
   const halte = (+st.bk)*A*months;
   const vkMakler = sale*(+st.maklerVerk/100)*1.2;
@@ -415,13 +498,14 @@ function calc(st, o={}){
   else if(st.steuer==="gmbhaus"){ steuerBasis=gewinnVor; const k=Math.max(0,gewinnVor)*0.23; steuer = k + (Math.max(0,gewinnVor)-k)*0.275; }
   else { steuerBasis=gewinnVor; steuer=Math.max(0,gewinnVor)*(+st.grenzsatz/100); }
   const gewinnNach = gewinnVor - steuer;
-  const eigenkapital = total - loan;
+  // Verkäufer-Makler wird bei Verkauf aus dem Erlös bezahlt, nicht aus Eigenkapital
+  const eigenkapital = total - vkMakler - loan;
   const marge = gewinnVor/total;
   const roe = gewinnNach/eigenkapital;
   const roePa = months>0 ? (Math.pow(Math.max(0.0001,1+roe),12/months)-1) : NaN;
   if(roe<=-1) {}
   const breakEvenM2 = (total - vkMakler)/(A*(1-(+st.maklerVerk/100)*1.2)) ; // approx
-  return {P,A,san,sanTotal,ref,lf,lfSum,ausst,refSale,vkM2,sale,nkMakler,nkNotar,nkGrest,nkGb,nkPfand,nkBank,nkAnsch,loan,zinsen,halte,vkMakler,vkKosten,finanz,total,gewinnVor,steuer,steuerBasis,gewinnNach,eigenkapital,marge,roe,roePa:(1+roe)>0?roePa:-1,months,breakEvenM2:(total-vkMakler)/A};
+  return {P,A,san,sanTotal,ref,lf,lfSum,ausst,refSale,vkM2,sale,nkMakler,nkNotar,nkGrest,nkGb,nkPfand,nkBank,nkAnsch,loan,loanBase,zinsen,halte,vkMakler,vkKosten,finanz,total,gewinnVor,steuer,steuerBasis,gewinnNach,eigenkapital,marge,roe,roePa:(1+roe)>0?roePa:-1,months,breakEvenM2:(total-vkMakler)/A};
 }
 function breakEven(st){ // Verkaufspreis/m², bei dem Gewinn vor Steuern = 0
   let lo=0, hi=60000; for(let i=0;i<50;i++){ const mid=(lo+hi)/2; const r=calc({...st,vkOverride:mid}); if(r.gewinnVor>0) hi=mid; else lo=mid;} return hi;
@@ -440,17 +524,9 @@ function risk(st){
   if(+st.flaeche<35) flags.push(["info","Sehr kleine Einheit: hohe €/m²-Erlöse möglich, aber Sanierungsfixkosten (Bad, Küche) wiegen schwer."]);
   return {pts,flags,ko};
 }
-function evaluate(st){
+function scoreOf(st){
   const r=calc(st), rk=risk(st);
-  const be=breakEven(st);
   const worst=calc(st,{saleMult:0.9,sanMult:1.25,extraMonths:6});
-  const sc=[
-    ["Basis",r],
-    ["Verkaufspreis −10 %",calc(st,{saleMult:0.9})],
-    ["Sanierung +25 %",calc(st,{sanMult:1.25})],
-    ["Verzögerung +6 Monate",calc(st,{extraMonths:6})],
-    ["Worst Case (alle drei)",worst],
-  ];
   // Score 0..100
   let s = 50 + (r.marge-0.10)*250; // 10% -> 50, 20% -> 75, 30% -> 100
   s += Math.max(-15, Math.min(10, (r.roePa-0.20)*40));
@@ -463,8 +539,18 @@ function evaluate(st){
   else if(r.marge>=ziel && s>=65){ cls="ok"; txt="Kauf lohnt sich"; sub="Marge über Ziel, Risiko vertretbar."; }
   else if(r.marge>=Math.max(0.08,ziel*0.5) && s>=40){ cls="warn"; txt="Grenzwertig – nachverhandeln"; sub="Nur mit niedrigerem Kaufpreis oder schlankerer Sanierung."; }
   else { cls="bad"; txt="Lohnt sich nicht"; sub="Marge zu gering für das Sanierungsrisiko."; }
-  const maxKP = maxKaufpreis(st, ziel);
-  return {r,rk,be,sc,s,cls,txt,sub,maxKP,worst};
+  return {r,rk,s,cls,txt,sub,worst};
+}
+function evaluate(st){
+  const e=scoreOf(st), r=e.r;
+  const sc=[
+    ["Basis",r],
+    ["Verkaufspreis −10 %",calc(st,{saleMult:0.9})],
+    ["Sanierung +25 %",calc(st,{sanMult:1.25})],
+    ["Verzögerung +6 Monate",calc(st,{extraMonths:6})],
+    ["Worst Case (alle drei)",e.worst],
+  ];
+  return {...e, sc, be:breakEven(st), maxKP:maxKaufpreis(st,+st.zielmarge/100)};
 }
 
 /* ---------- UI ---------- */
@@ -472,16 +558,12 @@ function buildTabs(){
   const pages=$$(".page"); const nav=$("#tabs"); nav.innerHTML="";
   pages.forEach((p,i)=>{ const b=document.createElement("button"); b.innerHTML=`<span class="n">${i+1}</span>${p.dataset.title}`; b.onclick=()=>go(i); nav.appendChild(b); });
 }
-function go(i){ page=Math.max(0,Math.min($$(".page").length-1,i)); $$(".page").forEach((p,j)=>p.classList.toggle("active",j===page)); $$("#tabs button").forEach((b,j)=>b.classList.toggle("active",j===page)); $("#prev").style.visibility=page?"visible":"hidden"; $("#next").textContent= page===$$(".page").length-2? "Zur Auswertung →" : "Weiter →"; $("#next").style.visibility= page===$$(".page").length-1?"hidden":"visible"; window.scrollTo({top:0,behavior:"smooth"}); }
+function go(i){ page=Math.max(0,Math.min($$(".page").length-1,i)); $$(".page").forEach((p,j)=>p.classList.toggle("active",j===page)); $$("#tabs button").forEach((b,j)=>b.classList.toggle("active",j===page)); $("#prev").style.visibility=page?"visible":"hidden"; const nx=$$(".page")[page+1]; $("#next").textContent= nx? (innerWidth<700?"Weiter →":`Weiter: ${nx.dataset.title.replace("&amp;","&")} →`) : ""; $("#next").style.visibility= page===$$(".page").length-1?"hidden":"visible"; window.scrollTo({top:0,behavior:"smooth"}); }
 
 function buildBezirk(){
   const sel=$("#bezirkSel"); sel.innerHTML="";
   for(let i=1;i<=23;i++){ const o=document.createElement("option"); o.value=String(i); o.textContent=`${i}. ${DATA[i].name}`; sel.appendChild(o);}
-  const vals=Object.values(DATA).map(d=>d.trend[10]); const mn=Math.min(...vals), mx=Math.max(...vals.filter(v=>v<10000));
-  const dm=$("#distmap"); dm.innerHTML="";
-  for(let i=1;i<=23;i++){ const v=DATA[i].trend[10]; const t=Math.min(1,(v-mn)/(mx-mn)); const div=document.createElement("div");
-    div.style.background=`hsl(${130-130*t},55%,${86-10*t}%)`; div.dataset.b=i; div.innerHTML=`<b>${i}. ${DATA[i].name}</b>${fmt(v)} €/m²`;
-    div.onclick=()=>{S.bezirk=String(i); syncInputs(); update();}; dm.appendChild(div);}
+  $("#distmap").onclick=e=>{ const b=e.target.closest("path[data-b]"); if(!b) return; S.bezirk=b.dataset.b; syncInputs(); update(); };
 }
 function buildComps(){
   const tb=$("#compTable tbody"); tb.innerHTML="";
@@ -532,7 +614,7 @@ function cagr(trend,from,to){ const a=trend[from],b=trend[to]; return (a&&b)? Ma
 
 function update(){
   const ev=evaluate(S), r=ev.r, d=DATA[S.bezirk];
-  $$("#distmap div").forEach(x=>x.classList.toggle("sel",x.dataset.b===S.bezirk));
+  $("#distmap").innerHTML=mapSVG(S.bezirk,{click:true,showPrice:true});
   // Lage refbox
   const sizeTxt=["< 54 m²","54–77 m²","> 77 m²"][sizeClass(+S.flaeche)], bjTxt=["bis 1960","1961–1990","ab 1991"][+S.baujahr];
   $("#refLage").innerHTML=`<b>Referenz Statistik Austria – ${S.bezirk}. ${d.name}</b>, Baujahr ${bjTxt}, ${sizeTxt}:
@@ -546,10 +628,12 @@ function update(){
   $("#refKauf").innerHTML=`Kaufpreis <b>${fmt(kpM2)} €/m²</b> · Bezirks-Ø (gleiche Klasse, alle Zustände) <b>${fmt(refPrice(S,false))} €/m²</b> → ${pct(kpM2/refPrice(S,false)-1)} <br>
    Fairer Ankaufspreis bei diesem Sanierungsumfang (Annahme: −${fmt((1-abschlag)*100)} % vs. Ø, lagebereinigt): <b>${fmt(fairM2)} €/m²</b> ≈ <b>${eur(fairM2*r.A)}</b>
    <span class="pill ${diff<=-0.05?'ok':diff<=0.05?'warn':'bad'}">${diff<=0?'':'+'}${pct(diff)} ${diff<=-0.05?'unter Markt':diff<=0.05?'marktüblich':'über Markt'}</span><br>
-   Kaufnebenkosten: <b>${eur(r.nkAnsch)}</b> (${pct(r.nkAnsch/r.P)}) + Finanzierungsnebenkosten ${eur(r.nkPfand+r.nkBank)} · Kredit ${eur(r.loan)} · Eigenkapitalbedarf <b>${eur(r.eigenkapital)}</b>`;
+   Kaufnebenkosten: <b>${eur(r.nkAnsch)}</b> (${pct(r.nkAnsch/r.P)}) + Finanzierungsnebenkosten ${eur(r.nkPfand+r.nkBank)}<br>
+   <b>Kredit ${eur(r.loan)}</b> = ${fmt(+S.ltv)} % × ${eur(r.loanBase)} (${{k:"Kaufpreis",ks:"Kaufpreis + Sanierung",gesamt:"Kaufpreis + Kaufnebenkosten + Sanierung"}[S.ltvBasis||"ks"]}) · entspricht ${pct(r.loan/(r.total-r.vkMakler))} des Kapitalbedarfs<br>
+   Eigenkapitalbedarf <b>${eur(r.eigenkapital)}</b> = Kapitalbedarf ${eur(r.total-r.vkMakler)} (alle Kosten bis zum Verkauf; Verkäufer-Makler zahlt der Erlös) − Kredit`;
   // Sanierung table
   for(const row of r.san.rows){ const c=$(`[data-cost="${row.c.k}"]`); if(c) c.textContent= row.cost? eur(row.cost):"–"; }
-  $("#compTable tfoot").innerHTML=`<tr><td colspan="4">Summe Gewerke</td><td class="num">${eur(r.san.base)}</td></tr>
+  $("#compTable tfoot").innerHTML=`${r.san.extra?`<tr><td colspan="4">Ausstattungs-Aufpreis (${AUSST[S.ausstattung][1]}, ${fmt(r.san.extra/r.A)} €/m²) – siehe Kategorie „Verkauf“</td><td class="num">${eur(r.san.extra)}</td></tr>`:""}<tr><td colspan="4">Summe Gewerke inkl. Ausstattung</td><td class="num">${eur(r.san.base)}</td></tr>
    <tr><td colspan="4">Planung / Bauleitung (${S.planung} %)</td><td class="num">${eur(r.san.plan)}</td></tr>
    <tr><td colspan="4">Reserve (${S.reserve} %)</td><td class="num">${eur(r.san.res)}</td></tr>
    <tr><th colspan="4">Sanierung gesamt ${r.san.override?'<span class="pill warn">manuell überschrieben</span>':''}</th><th class="num">${eur(r.san.total)}</th></tr>`;
@@ -559,7 +643,8 @@ function update(){
   $("#vkHint").textContent=`Referenz: ${fmt(r.refSale)} €/m² (${AUSST[S.ausstattung][1]} +${AUSST[S.ausstattung][0]*100} %, Lage ${r.lfSum>=0?'+':''}${fmt(r.lfSum*100)} %)`;
   $("#refVerk").innerHTML=`Verkaufserlös: <b>${fmt(r.vkM2)} €/m² × ${fmt(r.A)} m² = ${eur(r.sale)}</b> · Projektdauer <b>${r.months} Monate</b> · Break-even-Verkaufspreis <b>${fmt(ev.be)} €/m²</b><br>
    Plausibilität: Ø Neubau/Erstbezug ab 1991 im ${S.bezirk}. Bezirk: <b>${fmt(DATA[S.bezirk][S.aussen!=="nein"?"mit":"ohne"][6+sizeClass(+S.flaeche)])} €/m²</b> – ein sanierter Altbau liegt meist in dieser Größenordnung.`;
-  renderSide(ev); renderReport(ev);
+  renderSide(ev); renderReport(ev); renderDeal(ev); renderRent(ev);
+  const ms=$("#mobScore"); ms.className=ev.cls; ms.innerHTML=`${ev.s} Punkte<small>${esc(ev.txt)}</small>`;
 }
 
 function renderSide(ev){
@@ -577,7 +662,8 @@ function renderSide(ev){
   </div>
   <div class="card" style="margin-top:12px;padding:12px 14px"><b class="small">Risiken &amp; Hinweise</b>
    <ul class="flags">${ev.rk.flags.length? ev.rk.flags.map(f=>`<li><span class="pill ${f[0]==='ko'?'bad':f[0]}">${f[0]==='ko'?'K.O.':f[0]==='bad'?'hoch':f[0]==='warn'?'mittel':'Info'}</span><span>${f[1]}</span></li>`).join("") : '<li class="muted">Keine Auffälligkeiten erfasst – Checkliste unter „Haus &amp; Recht“ ausfüllen.</li>'}</ul></div>
-  <button class="pri noprint" style="width:100%" onclick="go(5)">Detaillierte Auswertung</button>`;
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="noprint" onclick="go(5)">Auswertung</button><button class="noprint" onclick="go(7)">Deal verbessern</button><button class="noprint" onclick="go(6)" style="grid-column:span 2">Vermietung nach Sanierung</button></div>
+  <button class="pri noprint" style="width:100%;margin-top:8px" onclick="openExport()">Bericht exportieren (PDF / HTML)</button>`;
 }
 
 function renderReport(ev){
@@ -645,6 +731,414 @@ function renderReport(ev){
    </ul>`;
 }
 
+/* ---------- SVG-Grafiken ---------- */
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const kEur = n=> (Math.abs(n)>=1e6? fmt(n/1e6,2)+" Mio": fmt(n/1000)+" k");
+const heat = t=>`hsl(${(8+ (1-t)*40).toFixed(0)},${(55+t*25).toFixed(0)}%,${(90-t*45).toFixed(0)}%)`;
+function mapSVG(sel, {click=false, w="100%", showPrice=false}={}){
+  const vals=Object.values(DATA).map(d=>d.trend[10]); const mn=Math.min(...vals), mx=Math.max(...vals.filter(v=>v<10000));
+  let p="", l="";
+  for(let i=1;i<=23;i++){ const b=MAP.b[i]; const v=DATA[i].trend[10]; const t=Math.min(1,(v-mn)/(mx-mn)); const isSel=String(i)===String(sel);
+    p+=`<path d="${b.d}" data-b="${i}" fill="${heat(t)}" stroke="${isSel?'#1d2330':'#fff'}" stroke-width="${isSel?2.6:1}" ${click?'style="cursor:pointer"':''}><title>${i}. ${DATA[i].name}: ${fmt(v)} €/m² (2025)</title></path>`;
+    const big = !["1","4","5","6","7","8"].includes(String(i)) || isSel;
+    l+=`<text x="${b.x}" y="${b.y+(showPrice&&big?-2:3)}" text-anchor="middle" font-size="${big?11:9}" font-weight="${isSel?800:600}" fill="${t>0.6?'#fff':'#1d2330'}" pointer-events="none">${i}</text>`;
+    if(showPrice && big && ![1].includes(i)) l+=`<text x="${b.x}" y="${b.y+9}" text-anchor="middle" font-size="7.5" fill="${t>0.6?'#fff':'#3a4255'}" pointer-events="none">${fmt(v)}</text>`;
+  }
+  const sb=MAP.b[sel];
+  const pin = sb? `<g pointer-events="none"><circle cx="${sb.x}" cy="${sb.y}" r="14" fill="none" stroke="#c8102e" stroke-width="2.5"/><circle cx="${sb.x}" cy="${sb.y}" r="20" fill="none" stroke="#c8102e" stroke-width="1" opacity=".5"/></g>`:"";
+  const lg = `<g transform="translate(10,${MAP.h-28})"><defs><linearGradient id="hg"><stop offset="0" stop-color="${heat(0)}"/><stop offset=".5" stop-color="${heat(.5)}"/><stop offset="1" stop-color="${heat(1)}"/></linearGradient></defs><rect width="150" height="9" rx="3" fill="url(#hg)"/><text y="22" font-size="9" fill="#6b7385">${fmt(mn)} €/m²</text><text x="150" y="22" font-size="9" text-anchor="end" fill="#6b7385">${fmt(mx)}+ €/m²</text></g>`;
+  return `<svg class="wmap" viewBox="0 0 ${MAP.w} ${MAP.h}" width="${w}" xmlns="http://www.w3.org/2000/svg">${p}${l}${pin}${lg}</svg>`;
+}
+function gaugeSVG(score, cls){
+  const cx=120,cy=118,r=95, pt=(s,rr=r)=>{const a=Math.PI*(1-s/100); return [cx+rr*Math.cos(a), cy-rr*Math.sin(a)];};
+  const arc=(s0,s1,col)=>{const a=pt(s0),b=pt(s1); return `<path d="M${a[0]},${a[1]} A${r},${r} 0 0 1 ${b[0]},${b[1]}" stroke="${col}" stroke-width="20" fill="none"/>`;};
+  const n=pt(score,r-28), col={ok:"#1a8f4c",warn:"#e39a10",bad:"#d03131"}[cls];
+  let ticks=""; for(let s=0;s<=100;s+=10){const a=pt(s,r+14),b=pt(s,r+9); ticks+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#9aa1b2" stroke-width="1"/>`; }
+  return `<svg viewBox="0 0 240 150" width="100%" xmlns="http://www.w3.org/2000/svg">${arc(0,40,"#f2b8b8")}${arc(40,65,"#f7dca4")}${arc(65,100,"#b7e2c7")}${arc(0,Math.max(0.5,score),col)}${ticks}
+   <line x1="${cx}" y1="${cy}" x2="${n[0]}" y2="${n[1]}" stroke="#1d2330" stroke-width="4" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="8" fill="#1d2330"/>
+   <text x="${cx}" y="${cy+30}" text-anchor="middle" font-size="28" font-weight="800" fill="${col}">${score}</text><text x="${cx}" y="${cy+44}" text-anchor="middle" font-size="9" fill="#6b7385">von 100 Punkten</text>
+   <text x="18" y="${cy+16}" font-size="9" fill="#9aa1b2">0</text><text x="222" y="${cy+16}" font-size="9" fill="#9aa1b2" text-anchor="end">100</text></svg>`;
+}
+const COSTCOL={kauf:"#1d2330",nk:"#6b7385",san:"#c8102e",fin:"#e39a10",halt:"#7aa5d6",vk:"#9b7ad6"};
+function costParts(r){ return [["Kaufpreis",r.P,COSTCOL.kauf],["Kaufnebenkosten",r.nkAnsch,COSTCOL.nk],["Sanierung",r.sanTotal,COSTCOL.san],["Finanzierung",r.finanz,COSTCOL.fin],["Haltekosten",r.halte,COSTCOL.halt],["Verkaufskosten",r.vkKosten,COSTCOL.vk]]; }
+function waterfallSVG(r){
+  const parts=costParts(r), W=680,H=240,top=22,bot=46,left=8; const mx=Math.max(r.total,r.sale)*1.08;
+  const y=v=>top+(H-top-bot)*(1-v/mx), n=parts.length+3, bw=(W-left*2)/n*0.66, gap=(W-left*2)/n;
+  let acc=0, s="";
+  parts.forEach((p,i)=>{ const x=left+i*gap+(gap-bw)/2; const y0=y(acc), y1=y(acc+p[1]);
+    s+=`<rect x="${x}" y="${y1}" width="${bw}" height="${Math.max(1,y0-y1)}" rx="3" fill="${p[2]}"/>`;
+    s+=`<text x="${x+bw/2}" y="${y1-5}" text-anchor="middle" font-size="10" font-weight="600" fill="#1d2330">${kEur(p[1])}</text>`;
+    s+=`<text x="${x+bw/2}" y="${H-bot+14}" text-anchor="middle" font-size="9.5" fill="#6b7385">${p[0].replace("kosten","-\u200bkosten").split("\u200b").map((t,j)=>`<tspan x="${x+bw/2}" dy="${j?11:0}">${t}</tspan>`).join("")}</text>`;
+    if(i<parts.length-1) s+=`<line x1="${x+bw}" y1="${y1}" x2="${x+gap}" y2="${y1}" stroke="#b9bfcc" stroke-dasharray="3,2"/>`;
+    acc+=p[1]; });
+  const bars=[["Gesamtkosten",r.total,"#3a4358"],["Verkaufserlös",r.sale,"#1a8f4c"]];
+  bars.forEach((b,j)=>{ const i=parts.length+j, x=left+i*gap+(gap-bw)/2;
+    s+=`<rect x="${x}" y="${y(b[1])}" width="${bw}" height="${y(0)-y(b[1])}" rx="3" fill="${b[2]}"/><text x="${x+bw/2}" y="${y(b[1])-5}" text-anchor="middle" font-size="10" font-weight="700">${kEur(b[1])}</text><text x="${x+bw/2}" y="${H-bot+14}" text-anchor="middle" font-size="9.5" fill="#6b7385">${b[0]}</text>`; });
+  const i=parts.length+2, x=left+i*gap+(gap-bw)/2, g=r.gewinnVor, pos=g>=0;
+  const ya=y(Math.max(r.total,r.sale)), yb=y(Math.min(r.total,r.sale));
+  s+=`<rect x="${x}" y="${ya}" width="${bw}" height="${Math.max(2,yb-ya)}" rx="3" fill="${pos?'#3fbf75':'#e05252'}"/><text x="${x+bw/2}" y="${ya-5}" text-anchor="middle" font-size="10.5" font-weight="800" fill="${pos?'#137a3f':'#a11f1f'}">${pos?'+':''}${kEur(g)}</text><text x="${x+bw/2}" y="${H-bot+14}" text-anchor="middle" font-size="9.5" fill="#6b7385">Gewinn v. St.</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg"><line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#cfd5df"/>${s}</svg>`;
+}
+function donutSVG(parts){
+  const tot=parts.reduce((a,b)=>a+b[1],0), R=62, C=2*Math.PI*R; let off=0, s="";
+  parts.forEach(p=>{ const l=p[1]/tot*C; s+=`<circle r="${R}" cx="80" cy="80" fill="none" stroke="${p[2]}" stroke-width="26" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-off}" transform="rotate(-90 80 80)"/>`; off+=l; });
+  const lg=parts.map((p,i)=>`<g transform="translate(180,${18+i*22})"><rect width="11" height="11" rx="2" fill="${p[2]}"/><text x="17" y="10" font-size="10.5">${p[0]}</text><text x="190" y="10" font-size="10.5" text-anchor="end" font-weight="600">${fmt(p[1]/tot*100,1)} %</text></g>`).join("");
+  return `<svg viewBox="0 0 380 160" width="100%" xmlns="http://www.w3.org/2000/svg">${s}<text x="80" y="76" text-anchor="middle" font-size="9" fill="#6b7385">Gesamt</text><text x="80" y="92" text-anchor="middle" font-size="13" font-weight="700">${kEur(tot)} €</text>${lg}</svg>`;
+}
+function hbarsSVG(rows,{W=680,label=200,fmtv=v=>(v>=0?'+':'')+kEur(v)+' €'}={}){ // rows: [label, value, sub?]
+  const rh=28, H=rows.length*rh+10; const mx=Math.max(1,...rows.map(r=>Math.abs(r[1]))); const hasNeg=rows.some(r=>r[1]<0);
+  const x0= hasNeg? label+(W-label)/2 : label+4, span = hasNeg? (W-label)/2-60 : W-label-90;
+  let s=rows.map((r,i)=>{ const yy=5+i*rh, w=Math.abs(r[1])/mx*span, pos=r[1]>=0;
+    return `<text x="${label-8}" y="${yy+17}" text-anchor="end" font-size="10.5" fill="#1d2330">${esc(r[0])}</text>
+     <rect x="${pos?x0:x0-w}" y="${yy+5}" width="${Math.max(1.5,w)}" height="17" rx="3" fill="${r[2]||(pos?'#3fbf75':'#e05252')}"/>
+     <text x="${pos?x0+w+5:x0-w-5}" y="${yy+17}" text-anchor="${pos?'start':'end'}" font-size="10" font-weight="700" fill="${pos?'#137a3f':'#a11f1f'}">${fmtv(r[1])}</text>`; }).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg"><line x1="${x0}" x2="${x0}" y1="0" y2="${H}" stroke="#9aa1b2"/>${s}</svg>`;
+}
+function ladderSVG(items){ // [label, value, color]
+  const W=680,H=150; const vs=items.map(i=>i[1]); const mn=Math.min(...vs)*0.9, mx=Math.max(...vs)*1.06; const x=v=>30+(W-60)*(v-mn)/(mx-mn);
+  const sorted=[...items].sort((a,b)=>a[1]-b[1]); let s="";
+  const kauf=items[0][1], vk=items[items.length-1][1];
+  s+=`<defs><linearGradient id="lg1"><stop offset="0" stop-color="#1d2330" stop-opacity=".15"/><stop offset="1" stop-color="#1a8f4c" stop-opacity=".35"/></linearGradient></defs>`;
+  s+=`<rect x="30" y="70" width="${W-60}" height="10" rx="5" fill="#eef0f4"/><rect x="${x(Math.min(kauf,vk))}" y="66" width="${Math.abs(x(vk)-x(kauf))}" height="18" rx="6" fill="url(#lg1)"/>`;
+  sorted.forEach((it,i)=>{ const up=i%2===0, xx=x(it[1]);
+    s+=`<line x1="${xx}" x2="${xx}" y1="${up?40:84}" y2="${up?66:110}" stroke="${it[2]}" stroke-width="1.5"/><circle cx="${xx}" cy="75" r="7" fill="${it[2]}" stroke="#fff" stroke-width="2"/>
+      <text x="${xx}" y="${up?22:124}" text-anchor="middle" font-size="10" fill="#6b7385">${esc(it[0])}</text><text x="${xx}" y="${up?35:138}" text-anchor="middle" font-size="11.5" font-weight="700" fill="${it[2]}">${fmt(it[1])} €/m²</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+}
+function lineSVG(trend){
+  const W=680,H=210,l=46,r=16,t=20,b=26; const pts=trend.map((v,i)=>[i,v]).filter(p=>p[1]!=null); const vs=pts.map(p=>p[1]);
+  const mn=Math.floor(Math.min(...vs)*0.9/500)*500, mx=Math.ceil(Math.max(...vs)*1.05/500)*500;
+  const x=i=>l+(W-l-r)*i/10, y=v=>t+(H-t-b)*(1-(v-mn)/(mx-mn)); let g="";
+  for(let v=mn; v<=mx; v+=Math.max(500,Math.round((mx-mn)/4/500)*500)) g+=`<line x1="${l}" x2="${W-r}" y1="${y(v)}" y2="${y(v)}" stroke="#eef0f4"/><text x="${l-6}" y="${y(v)+3}" font-size="9" text-anchor="end" fill="#9aa1b2">${fmt(v)}</text>`;
+  YEARS.forEach((yr,i)=> g+=`<text x="${x(i)}" y="${H-8}" font-size="9" text-anchor="middle" fill="#9aa1b2">${yr}</text>`);
+  const d=pts.map((p,j)=>(j?"L":"M")+x(p[0]).toFixed(1)+","+y(p[1]).toFixed(1)).join(" ");
+  const area=d+` L${x(pts[pts.length-1][0])},${y(mn)} L${x(pts[0][0])},${y(mn)} Z`;
+  const imax=vs.indexOf(Math.max(...vs));
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8102e" stop-opacity=".25"/><stop offset="1" stop-color="#c8102e" stop-opacity="0"/></linearGradient></defs>${g}
+   <path d="${area}" fill="url(#ar)"/><path d="${d}" fill="none" stroke="#c8102e" stroke-width="2.5"/>${pts.map(p=>`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="3" fill="#fff" stroke="#c8102e" stroke-width="2"/>`).join("")}
+   ${[0,imax,pts.length-1].filter((v,i,a)=>a.indexOf(v)===i).map(j=>`<text x="${x(pts[j][0])}" y="${y(pts[j][1])-9}" font-size="10.5" font-weight="700" text-anchor="middle">${fmt(pts[j][1])}</text>`).join("")}</svg>`;
+}
+
+/* ---------- Deal verbessern ---------- */
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function leverList(st, ev){
+  const L=[], A=+st.flaeche, P=+st.kaufpreis, c=st.comps;
+  const add=(cat,t,d,mod,combo=true)=>L.push({cat,t,d,mod,combo});
+  if(ev.maxKP<P && ev.maxKP>0) add("Einkauf",`Kaufpreis auf ${eur(ev.maxKP)} verhandeln`,`${eur(P-ev.maxKP)} (−${pct(1-ev.maxKP/P)}) unter Angebot – damit ist die Zielmarge von ${st.zielmarge} % erreicht.`,s=>{s.kaufpreis=Math.round(ev.maxKP/1000)*1000;},false);
+  add("Einkauf","Preisnachlass 5 %",`Übliches Verhandlungsergebnis bei sanierungsbedürftigen Objekten mit Mängelliste (Gutachten, Angebote als Argument).`,s=>{s.kaufpreis=Math.round(P*0.95);});
+  if(+st.maklerKauf>0) add("Einkauf","Käuferprovision wegverhandeln",`Off-Market / direkt vom Eigentümer, oder Provision auf 1,5 % drücken.`,s=>{s.maklerKauf=0;});
+  if(+st.sonderumlage>0) add("Einkauf","Sonderumlage vom Verkäufer tragen lassen",`Beschlossene Haussanierung als Kaufpreisabzug oder Vereinbarung „trägt Verkäufer“ im Kaufvertrag.`,s=>{s.sonderumlage=0;});
+  if(+c.boden===2 && st.baujahr==="0") add("Sanierung","Altparkett erhalten statt neu verlegen",`Schleifen/Ölen des Altbau-Parketts – oft sogar verkaufsfördernd.`,s=>{s.comps.boden=1;});
+  if(+c.fensterK===2) add("Sanierung","Kastenfenster sanieren statt tauschen",`Abdichten, Beschläge, Anstrich – in Schutzzonen ohnehin oft verlangt.`,s=>{s.comps.fensterK=1;});
+  if(+c.tuerenK===2 && st.baujahr==="0") add("Sanierung","Altbautüren aufarbeiten",`Kassettentüren abbeizen und lackieren statt Neutüren.`,s=>{s.comps.tuerenK=1;});
+  if(+c.kueche===3) add("Sanierung","Küche Mittelklasse statt hochwertig",`Käufer bewerten Küchen kaum über die Kosten.`,s=>{s.comps.kueche=2;});
+  if(+c.grundriss===2 && st.grundriss!=="schlecht") add("Sanierung","Grundriss nur minimal ändern",`Bestehende Raumaufteilung nutzen spart Trockenbau, Statik und Bauanzeige.`,s=>{s.comps.grundriss=1;});
+  if(st.preisniveau==="1.2") add("Sanierung","Mittelpreisigen Baumeister beauftragen",`3 Vergleichsangebote, Pauschalfestpreis.`,s=>{s.preisniveau="1";});
+  else if(st.preisniveau==="1") add("Sanierung","Gewerke einzeln vergeben (Eigenregie)",`Ca. 15 % günstiger, aber mehr Koordinationsaufwand und Risiko.`,s=>{s.preisniveau="0.85";});
+  if(st.ausstattung==="std") add("Mehrwert","Ausstattung „gehoben“ statt Standard",`Fischgrät, Design-Bad, bessere Armaturen: höherer €/m²-Erlös, Mehrkosten eingerechnet.`,s=>{s.ausstattung="geh";});
+  if(st.ausstattung==="prem") add("Mehrwert","Ausstattung „gehoben“ statt Premium",`Premium-Aufschlag wird in vielen Bezirken nicht voll bezahlt.`,s=>{s.ausstattung="geh";});
+  if((st.stock==="dg"||st.stock==="og3") && +c.klima===0) add("Mehrwert","Klimaanlage einbauen",`In oberen Geschoßen/DG ein starkes Verkaufsargument.`,s=>{s.comps.klima=1;});
+  if(st.aussen==="nein") add("Mehrwert","Balkon nachträglich errichten",`Zubau-Balkon mit +8 % Wertansatz (vorsichtig gedeckelt); benötigt Zustimmung aller Eigentümer, Baubewilligung und ca. 3 Monate Vorlauf.`,s=>{s.aussen="neu"; s.comps.balkon=1; s.mVor=+s.mVor+3;},false);
+  if(st.grundriss==="schlecht") add("Mehrwert","Grundriss neu organisieren",`Durchgangszimmer auflösen, Küche öffnen – hebt den Abschlag für schwachen Grundriss auf.`,s=>{s.grundriss="mittel"; s.comps.grundriss=2;});
+  if(+st.mBau>=3) add("Zeit","Bauzeit um 1 Monat straffen",`GU-Vertrag mit Fixtermin und Pönale, Material vorbestellen.`,s=>{s.mBau=+s.mBau-1;});
+  if(+st.mVerk>2) add("Zeit","Vorverkauf ab Planungsphase",`Visualisierungen + Off-Market-Käuferliste: Vermarktungszeit −2 Monate.`,s=>{s.mVerk=Math.max(1,+s.mVerk-2);});
+  if(+st.maklerVerk>0) add("Verkauf","Selbst vermarkten statt Makler",`willhaben/ImmoScout24 + Profi-Fotos (+1.500 € Marketing).`,s=>{s.maklerVerk=0; s.marketing=+s.marketing+1500;});
+  if(+st.zins>3) add("Finanzierung","Zinssatz um 0,5 %-Punkte verbessern",`Angebote mehrerer Banken, variable Kurzläufer-Finanzierung.`,s=>{s.zins=+s.zins-0.5;});
+  const fix={we:"Kauf erst nach Begründung von Wohnungseigentum (aufschiebende Bedingung im Kaufvertrag).",bestand:"Nur bestandfrei kaufen: Räumung als Bedingung, sonst Kaufpreis wie Anlageobjekt (−30–40 %).",widmung:"Verkäufer muss Baukonsens / Umwidmung vor Unterfertigung nachweisen.",ruecklage:"Vorausschau der Hausverwaltung prüfen, anstehende Kosten als Kaufpreisabzug.",denkmal:"Vorab-Abklärung mit MA 19 / BDA zu Fenstern, Balkon, Fassade.",statik:"Statiker-Gutachten vor Anbot; Sanierungskosten als Preisabschlag geltend machen.",feucht:"Bauphysiker beiziehen, Ursache vor Kauf klären.",gas:"Fernwärme-Anschluss im Haus anregen (Förderungen „Raus aus Gas“).",zugang:"Logistik-Plan: Materiallift, Halteverbotszone (MA 46) früh beantragen.",energie:"Energieausweis aktualisieren; günstige Maßnahmen (Fenster abdichten) verbessern HWB."};
+  for(const ck of CHECKS){ const sel=+(st.checks[ck.k]??0); const o=ck.o[sel]; if(sel>0 && o[1]>=5) add("Risiko",`Risiko beseitigen: ${ck.t.replace(/\?$/,"")}`,fix[ck.k],s=>{s.checks[ck.k]=0;}); }
+  const base=ev;
+  for(const lv of L){ const s=clone(st); lv.mod(s); lv.st=s; lv.ev=scoreOf(s); lv.dG=lv.ev.r.gewinnVor-base.r.gewinnVor; lv.dS=lv.ev.s-base.s; }
+  const useful=L.filter(l=>l.dG>50 || l.dS>0).sort((a,b)=>b.dG-a.dG || b.dS-a.dS);
+  // Kombination
+  const cs=clone(st); useful.filter(l=>l.combo).forEach(l=>l.mod(cs)); const combo=scoreOf(cs);
+  return {list:useful, combo, comboN:useful.filter(l=>l.combo).length};
+}
+function solveTargets(st){
+  const ziel=+st.zielmarge/100;
+  let lo=0,hi=60000; for(let i=0;i<50;i++){const m=(lo+hi)/2; if(calc({...st,vkOverride:m}).marge>=ziel) hi=m; else lo=m;} const vk=hi;
+  let a=0,b=3e6; for(let i=0;i<60;i++){const m=(a+b)/2; if(calc({...st,sanOverride:m}).marge>=ziel) a=m; else b=m;}
+  const sanOK = calc({...st,sanOverride:1}).marge>=ziel;
+  return {vk, san: sanOK? a : null};
+}
+function renderDeal(ev){
+  const st=S, r=ev.r, lv=leverList(st,ev), tg=solveTargets(st), ziel=+st.zielmarge;
+  const verdictPill=e=>`<span class="pill ${e.cls}">${e.txt}</span>`;
+  const reached = r.marge>=ziel/100;
+  $("#deal").innerHTML=`
+   <h2>So wird’s ein besserer Deal</h2>
+   <p class="hint">Was müsste passieren, damit dieses Objekt deine Zielmarge von <b>${ziel} %</b> erreicht? Jeder Hebel ist mit deinen Eingaben durchgerechnet (Gewinn vor Steuern, Punkte, neue Einschätzung).</p>
+   <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi"><div class="k">Kaufpreis höchstens</div><div class="v">${eur(ev.maxKP)}</div><div class="small ${ev.maxKP>=r.P?'muted':''}" style="color:${ev.maxKP>=r.P?'':'var(--bad)'}">${ev.maxKP>=r.P?'✓ aktuelles Angebot passt':`${eur(r.P-ev.maxKP)} weniger als Angebot`}</div></div>
+    <div class="kpi"><div class="k">… oder Verkaufspreis mindestens</div><div class="v">${fmt(tg.vk)} €/m²</div><div class="small" style="color:${tg.vk<=r.vkM2?'':'var(--bad)'}">${tg.vk<=r.vkM2?'✓ Referenz liegt darüber':`+${pct(tg.vk/r.vkM2-1)} über Referenz (${fmt(r.vkM2)})`}</div></div>
+    <div class="kpi"><div class="k">… oder Sanierung höchstens</div><div class="v">${tg.san==null?'nicht erreichbar':eur(tg.san)}</div><div class="small" style="color:${tg.san!=null&&tg.san>=r.sanTotal?'':'var(--bad)'}">${tg.san==null?'auch ohne Sanierungskosten nicht':tg.san>=r.sanTotal?'✓ Budget reicht':`${eur(r.sanTotal-tg.san)} einsparen (${fmt(tg.san/r.A)} €/m²)`}</div></div>
+   </div>
+   ${lv.list.length? `<h3>Hebel nach Wirkung auf den Gewinn</h3>${hbarsSVG(lv.list.slice(0,12).map(l=>[l.t.length>34?l.t.slice(0,33)+"…":l.t,l.dG]),{label:250})}
+   <table style="margin-top:8px"><thead><tr><th>Bereich</th><th>Maßnahme</th><th class="num">Δ Gewinn</th><th class="num">Marge neu</th><th class="num">Punkte</th><th>Ergebnis</th></tr></thead><tbody>
+   ${lv.list.map(l=>`<tr><td><span class="pill info">${l.cat}</span></td><td><b>${esc(l.t)}</b><div class="small muted">${esc(l.d||"")}${l.combo?'':' <i>(nicht in Kombination enthalten)</i>'}</div></td><td class="num" style="color:${l.dG>=0?'var(--ok)':'var(--bad)'}">${l.dG>=0?'+':''}${eur(l.dG)}</td><td class="num">${pct(l.ev.r.marge)}</td><td class="num">${l.ev.s} <span class="small muted">(${l.dS>=0?'+':''}${l.dS})</span></td><td>${verdictPill(l.ev)}</td></tr>`).join("")}
+   </tbody></table>
+   <div class="refbox" style="border-style:solid;border-color:${lv.combo.cls==='ok'?'#9fd8b4':lv.combo.cls==='warn'?'#f0cf8a':'#f0a8a8'}"><b>Alle ${lv.comboN} kombinierbaren Hebel zusammen:</b> Gewinn vor Steuern <b>${eur(lv.combo.r.gewinnVor)}</b> (${lv.combo.r.gewinnVor-r.gewinnVor>=0?'+':''}${eur(lv.combo.r.gewinnVor-r.gewinnVor)}), Marge <b>${pct(lv.combo.r.marge)}</b>, ${lv.combo.s} Punkte → ${verdictPill(lv.combo)}</div>`
+   : `<p class="muted">Keine weiteren Hebel gefunden – ${reached?'der Deal erreicht die Zielmarge bereits.':'passe Kaufpreis oder Sanierungsumfang an.'}</p>`}`;
+  return {lv,tg};
+}
+
+/* ---------- Vermietung ---------- */
+// Angebotsmieten brutto €/m² (Median Inserate, Stand Nov. 2026): [mietdaten.at, rentradar.rentals]
+const RENT_ASK = {1:[26.64,26.9],2:[22.55,24.6],3:[23.75,24.0],4:[22.82,23.3],5:[20.51,22.4],6:[22.05,22.9],7:[22.55,22.8],8:[21.15,21.9],9:[21.66,23.7],10:[19.58,19.8],11:[18.75,18.5],12:[20.57,21.4],13:[19.48,22.7],14:[18.82,21.0],15:[20.23,24.0],16:[19.26,21.0],17:[20.64,20.9],18:[21.41,21.9],19:[23.14,22.7],20:[19.75,20.2],21:[19.75,20.0],22:[24.87,25.0],23:[19.00,19.4]};
+const RICHTWERT = 6.74; // Wien ab 1.4.2026 (Statistik Austria, § 5 RichtWG)
+// grobe Orientierung für Lagezuschlag €/m² (Lagezuschlagsrechner Stadt Wien; Gründerzeitviertel i. d. R. 0)
+const LZ_DEF = {1:16.0,2:3.3,3:4.2,4:5.3,5:1.4,6:5.3,7:5.3,8:5.3,9:5.3,10:0,11:0,12:0,13:4.2,14:1.4,15:0,16:0,17:1.4,18:4.2,19:4.2,20:0,21:1.4,22:1.4,23:1.4};
+const LOGO=__LOGOJSON__;
+const logo=(px,st="")=>LOGO.replace("<svg ",`<svg width="${px}" height="${px}" style="vertical-align:middle;${st}" `);
+function annuity(L, zinsPa, years){ const i=zinsPa/100/12, n=years*12; return i>0? L*i/(1-Math.pow(1+i,-n)) : L/n; }
+function rentCalc(st, r){
+  r=r||calc(st); const A=+st.flaeche, bz=st.bezirk, ask=RENT_ASK[bz]; const askB=(ask[0]+ask[1])/2;
+  const bkN=(+st.bk||0)/1.1;
+  let regime=st.mietRecht||"auto";
+  if(regime==="auto") regime = (st.vor1945==="ja" && st.stock!=="dg")? "rw" : "frei";
+  const lz = st.lagezuschlag!=="" && st.lagezuschlag!=null && !isNaN(+st.lagezuschlag)? +st.lagezuschlag : LZ_DEF[bz];
+  const lzOK = st.mikro==="top"||st.mikro==="gut";
+  const zu = {std:0.05,geh:0.10,prem:0.15}[st.ausstattung]||0.05;
+  const befr = st.befristet!=="nein";
+  const lfAdj = 1+r.lfSum*0.6, ausAdj = {std:0.97,geh:1,prem:1.05}[st.ausstattung]||1;
+  const freiNet = Math.max(0, askB/1.1 - bkN);
+  let sc;
+  if(regime==="rw"){
+    const f=befr?0.75:1;
+    sc=[["Pessimistisch", RICHTWERT*0.75, 3, "Richtwert ohne Zu-/Lagezuschlag, befristet (−25 %)"],
+        ["Realistisch", (RICHTWERT*(1+zu)+(lzOK?lz:0))*f, 1.5, `Richtwert + Ausstattung ${fmt(zu*100)} %${lzOK?` + Lagezuschlag ${fmt(lz,2)} €`:" (kein Lagezuschlag)"}${befr?", befristet −25 %":""}`],
+        ["Optimistisch", RICHTWERT*(1+zu+0.05)+lz, 0.5, `Richtwert + Zuschläge + voller Lagezuschlag ${fmt(lz,2)} €, unbefristet`]];
+  } else {
+    const real=freiNet*0.95*lfAdj*ausAdj;
+    sc=[["Pessimistisch", real*0.88, 3, "Vertragsmiete 12 % unter realistisch, längere Suche"],
+        ["Realistisch", real, 1.5, "Angebotsmiete Bezirk −5 % (Vertragsabschlag), lage- und ausstattungsbereinigt"],
+        ["Optimistisch", real*1.08, 0.5, "Top-Präsentation, möbliert/hochwertig, rascher Abschluss"]];
+  }
+  const invest = r.P + r.nkAnsch + r.sanTotal + r.nkPfand + r.nkBank;
+  const rate = annuity(r.loan, +st.zins, +st.tilgJahre||25), zinsM = r.loan*(+st.zins/100)/12;
+  const nonUml = (+st.nonUml||0)*A;
+  const rows = sc.map(([n,m2,leer,desc])=>{
+    const miete=m2*A, jahr=miete*12, eff=jahr*(1-leer/12*0.25)-nonUml*12; // Leerstand: Monate alle 4 Jahre
+    const brutto=jahr/invest, netto=eff/invest, cf=eff/12-rate;
+    const ek=invest-r.loan; const ekRend=(eff - zinsM*12)/ek;
+    const gesamt=(m2+bkN)*1.1*A;
+    return {n,m2,miete,gesamt,jahr,eff,brutto,netto,cf,ekRend,leer,desc,faktor:invest/jahr};
+  });
+  const real=rows[1]; const grade = real.brutto>=0.05?["ok","gut vermietbar"]: real.brutto>=0.035?["warn","durchschnittlich"]:["bad","schwache Rendite"];
+  return {regime, askB, freiNet, lz, lzOK, befr, invest, rate, zinsM, nonUml, rows, grade, bkN, ask};
+}
+function rentBarsSVG(rows){
+  const W=680,H=150, mx=Math.max(...rows.map(r=>r.m2))*1.15, cols=["#d05252","#2f6db5","#1a8f4c"]; let s="";
+  rows.forEach((r,i)=>{ const x=40+i*210, h=(H-45)*r.m2/mx, y=H-25-h;
+    s+=`<rect x="${x}" y="${y}" width="150" height="${h}" rx="5" fill="${cols[i]}" opacity=".88"/><text x="${x+75}" y="${y-6}" text-anchor="middle" font-size="13" font-weight="800" fill="${cols[i]}">${fmt(r.m2,2)} €/m²</text>
+     <text x="${x+75}" y="${y+18}" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">${eur(r.miete)}/Mo.</text><text x="${x+75}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="#6b7385">${r.n}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg"><line x1="20" x2="${W-20}" y1="${H-25}" y2="${H-25}" stroke="#cfd5df"/>${s}</svg>`;
+}
+function rentTable(rc, cls=""){
+  const R=rc.rows; const td=(f,c="")=>R.map(r=>`<td class="${cls||'num'}" ${c?`style="color:${c(r)}"`:''}>${f(r)}</td>`).join("");
+  const g=v=>v>=0?'var(--ok,#137a3f)':'var(--bad,#b42020)';
+  return `<table><thead><tr><th></th>${R.map(r=>`<th class="${cls||'num'}">${r.n}</th>`).join("")}</tr></thead><tbody>
+   <tr><td>Hauptmietzins netto</td>${td(r=>fmt(r.m2,2)+" €/m²")}</tr>
+   <tr><td>Nettomiete / Monat</td>${td(r=>eur(r.miete))}</tr>
+   <tr><td class="muted">Gesamtmiete für Mieter (inkl. BK + 10 % USt)</td>${td(r=>eur(r.gesamt))}</tr>
+   <tr><td>Jahresnettomiete</td>${td(r=>eur(r.jahr))}</tr>
+   <tr><td class="muted">Leerstand bei Mieterwechsel</td>${td(r=>fmt(r.leer,1)+" Mo.")}</tr>
+   <tr><td>Bruttorendite</td>${td(r=>pct(r.brutto))}</tr>
+   <tr><td>Nettorendite (nach Leerstand + nicht umlagef. Kosten)</td>${td(r=>pct(r.netto))}</tr>
+   <tr><td>Kaufpreisfaktor (Jahresmieten)</td>${td(r=>fmt(r.faktor,1)+"×")}</tr>
+   <tr><td><b>Cashflow / Monat nach Kreditrate</b></td>${td(r=>(r.cf>=0?'+':'')+eur(r.cf),r=>g(r.cf))}</tr>
+   <tr><td>EK-Rendite p. a. (nach Zinsen, vor Steuer)</td>${td(r=>pct(r.ekRend),r=>g(r.ekRend))}</tr></tbody></table>`;
+}
+function rentNotes(rc){
+  return rc.regime==="rw"
+   ? `<b>Mietrecht: MRG-Vollanwendung (Richtwert).</b> Altbau mit Baubewilligung vor 1945 → Hauptmietzins max. Richtwert ${fmt(RICHTWERT,2)} €/m² (ab 1.4.2026) + Zuschläge; befristete Verträge −25 %. Lagezuschlag nur bei überdurchschnittlicher Lage, in Gründerzeitvierteln in der Regel ausgeschlossen, und nur bei schriftlicher Bekanntgabe im Vertrag${rc.lzOK?"":" – bei deiner Mikrolage nicht angesetzt"}. Ausnahme: nach 2001 neu ausgebaute Dachgeschoße fallen nicht unter den Richtwert. Freie Marktmiete im Bezirk wäre netto ca. ${fmt(rc.freiNet,2)} €/m².`
+   : `<b>Mietrecht: freie Mietzinsbildung.</b> Angenommen für Bauten ab 1945 bzw. DG-Ausbauten nach 2001 (MRG-Teilanwendung). Mieterhöhungen sind seit 2026 durch das Mieten-Wertsicherungsgesetz begrenzt. Basis: Angebotsmieten ${esc(DATA[rc.ask?Object.keys(RENT_ASK).find(k=>RENT_ASK[k]===rc.ask):1].name)} ${fmt(rc.ask[0],2)}/${fmt(rc.ask[1],2)} €/m² brutto → netto ca. ${fmt(rc.freiNet,2)} €/m².`;
+}
+function renderRent(ev){
+  const rc=rentCalc(S, ev.r);
+  $("#rentOut").innerHTML=`
+   <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi"><div class="k">Vermietbarkeit</div><div class="v"><span class="pill ${rc.grade[0]}">${rc.grade[1]}</span></div></div>
+    <div class="kpi"><div class="k">Realistische Nettomiete</div><div class="v">${eur(rc.rows[1].miete)}</div><div class="small muted">${fmt(rc.rows[1].m2,2)} €/m² · Bruttorendite ${pct(rc.rows[1].brutto)}</div></div>
+    <div class="kpi"><div class="k">Cashflow / Monat (realistisch)</div><div class="v" style="color:${rc.rows[1].cf>=0?'var(--ok)':'var(--bad)'}">${rc.rows[1].cf>=0?'+':''}${eur(rc.rows[1].cf)}</div><div class="small muted">Kreditrate ${eur(rc.rate)} (${S.tilgJahre||25} J.)</div></div>
+    <div class="kpi"><div class="k">Investition (ohne Verkaufskosten)</div><div class="v">${eur(rc.invest)}</div><div class="small muted">Kredit ${eur(ev.r.loan)}</div></div>
+   </div>
+   ${rentBarsSVG(rc.rows)}
+   ${rentTable(rc)}
+   <div class="small muted" style="margin-top:6px">${rc.rows.map(r=>`<b>${r.n}:</b> ${r.desc}`).join(" · ")}</div>
+   <div class="refbox">${rentNotes(rc)}<br>Lagezuschlag-Vorgabe ${S.bezirk}. Bezirk: ${fmt(LZ_DEF[S.bezirk],2)} €/m² (grobe Orientierung – genauen Wert im Lagezuschlagsrechner der Stadt Wien je Adresse prüfen).</div>`;
+  return rc;
+}
+
+/* ---------- Export-Bericht ---------- */
+const REPORT_CSS = `
+.rp{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1d2330;font-size:11.5px;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rp *{box-sizing:border-box}
+.rp-page{width:210mm;min-height:297mm;padding:14mm 14mm 16mm;background:#fff;margin:0 auto 10mm;position:relative;box-shadow:0 4px 24px rgba(0,0,0,.12);overflow:hidden}
+.rp-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1d2330;padding-bottom:5px;margin-bottom:14px;font-size:10px;color:#6b7385}
+.rp-head b{color:#1d2330;letter-spacing:.3px}.rp-head b span{color:#c8102e}
+.rp-foot{position:absolute;left:14mm;right:14mm;bottom:7mm;font-size:8.5px;color:#9aa1b2;display:flex;justify-content:space-between;border-top:1px solid #e3e6ec;padding-top:4px}
+.rp h2{font-size:17px;margin:0 0 8px}.rp h3{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#c8102e;margin:16px 0 6px}
+.rp-cover{margin:-14mm -14mm 12px;padding:16mm 14mm 12mm;background:linear-gradient(135deg,#1d2330 0%,#2b3345 60%,#7a0f22 100%);color:#fff;position:relative}
+.rp-cover .brand{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#ff8a9b}
+.rp-cover h1{font-size:28px;margin:6px 0 4px;font-weight:750}
+.rp-cover .meta{color:#c9cfdb;font-size:12px}
+.rp-cover .stamp{position:absolute;right:14mm;top:16mm;border:2px solid rgba(255,255,255,.5);border-radius:8px;padding:6px 10px;font-size:10px;text-align:right;color:#dfe3ea}
+.rp-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.rp-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rp-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rp-kpi{border:1px solid #e3e6ec;border-radius:8px;padding:8px 10px;background:#fafbfc}
+.rp-kpi .k{font-size:9px;color:#6b7385;text-transform:uppercase;letter-spacing:.4px}
+.rp-kpi .v{font-size:15px;font-weight:750;font-variant-numeric:tabular-nums}
+.rp-kpi .v.pos{color:#137a3f}.rp-kpi .v.neg{color:#b42020}
+.rp-verdict{border-radius:10px;padding:12px 14px;color:#fff}
+.rp-verdict.ok{background:#1a8f4c}.rp-verdict.warn{background:#d98a00}.rp-verdict.bad{background:#c62828}
+.rp-verdict .l{font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:.85}.rp-verdict .t{font-size:19px;font-weight:800;margin:2px 0}
+.rp table{width:100%;border-collapse:collapse;font-size:10.5px}
+.rp th,.rp td{padding:4px 6px;border-bottom:1px solid #eef0f4;text-align:left;vertical-align:top}
+.rp th{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#6b7385}
+.rp td.n,.rp th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rp tr.sum td{font-weight:750;border-top:1.5px solid #1d2330;border-bottom:0}
+.rp .box{border:1px solid #e3e6ec;border-radius:10px;padding:10px 12px}
+.rp .pill{display:inline-block;white-space:nowrap;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:700}
+.rp .pill.ok{background:#e3f5ea;color:#13703b}.rp .pill.warn{background:#fff1d6;color:#925c00}.rp .pill.bad{background:#fde3e3;color:#a11f1f}.rp .pill.info{background:#eef0f4;color:#1d2330}
+.rp ul.fl{list-style:none;margin:0;padding:0}.rp ul.fl li{display:flex;align-items:flex-start;gap:7px;padding:4px 0;border-bottom:1px solid #eef0f4}
+.rp .muted{color:#6b7385}.rp .small{font-size:9.5px}
+.rp .facts td:first-child{color:#6b7385;width:45%}
+.rp .num-badge{display:inline-flex;width:18px;height:18px;border-radius:50%;background:#c8102e;color:#fff;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:6px}
+.rp .avoid{break-inside:avoid}
+@media print{.rp-page{margin:0;box-shadow:none;page-break-after:always;break-after:page;min-height:auto;height:297mm}.rp-page:last-child{page-break-after:auto;break-after:auto}}
+`;
+function reportHTML(){
+  const ev=evaluate(S), r=ev.r, d=DATA[S.bezirk], {lv,tg}=renderDeal(ev);
+  const date=new Date().toLocaleDateString("de-AT",{day:"2-digit",month:"long",year:"numeric"});
+  const title=esc(S.name||`Wohnung ${S.bezirk}. Bezirk`);
+  const head=n=>`<div class="rp-head"><b>${logo(16,"margin-right:6px;border-radius:3px")}WIEN <span>FLIP-CHECK</span></b><span>${title} · ${date}</span><span class="rp-pn">Seite ${n}</span></div>`;
+  const foot=`<div class="rp-foot"><span>Datenbasis: Statistik Austria, Immobilien-Durchschnittspreise 2025 (Transaktionen 2021–2025) · Stadt Wien OGD Bezirksgrenzen</span><span>Unverbindliche Modellrechnung – keine Steuer- oder Rechtsberatung</span></div>`;
+  const kpi=(k,v,c="")=>`<div class="rp-kpi"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`;
+  const sizeTxt=["< 54 m²","54–77 m²","> 77 m²"][sizeClass(+S.flaeche)], bjTxt=["bis 1960","1961–1990","ab 1991"][+S.baujahr];
+  const stockTxt={sout:"Souterrain",eg:"Erdgeschoß",og12:"1.–2. Stock",og3:"3. Stock +",dg:"Dachgeschoß"}[S.stock];
+  const kpM2=r.P/r.A, scopeM2=r.sanTotal/r.A, abschlag = scopeM2<400?0.92: scopeM2<900?0.82: scopeM2<1500?0.74:0.66, fairM2=refPrice(S,false)*(1+r.lfSum)*abschlag;
+  const c10=cagr(d.trend,0,10), c5=cagr(d.trend,5,10);
+  const rank=Object.keys(DATA).sort((a,b)=>DATA[b].trend[10]-DATA[a].trend[10]).indexOf(String(S.bezirk))+1;
+  const flags=ev.rk.flags.map(f=>`<li><span class="pill ${f[0]==='ko'?'bad':f[0]}">${f[0]==='ko'?'K.O.':f[0]==='bad'?'HOCH':f[0]==='warn'?'MITTEL':'INFO'}</span><span>${f[1]}</span></li>`).join("");
+  const p1=`<div class="rp-page">
+   <div class="rp-cover"><div class="brand">${logo(30,"margin-right:10px;border-radius:7px;box-shadow:0 0 0 1px rgba(255,255,255,.25)")}Investment-Analyse · Sanierungsobjekt</div><h1>${title}</h1>
+    <div class="meta">${S.bezirk}. Bezirk, ${esc(d.name)} · ${fmt(r.A)} m² · ${esc(S.zimmer)} Zimmer · ${stockTxt} · Baujahr ${bjTxt}</div>
+    <div class="stamp">Erstellt am<br><b style="font-size:12px;color:#fff">${date}</b></div></div>
+   <div class="rp-grid2" style="grid-template-columns:1.05fr 1fr;align-items:start">
+    <div><div class="rp-verdict ${ev.cls}"><div class="l">Gesamteinschätzung</div><div class="t">${ev.txt}</div><div style="font-size:11px">${ev.sub}</div></div>
+      <div style="margin-top:6px">${gaugeSVG(ev.s,ev.cls)}</div></div>
+    <div class="box"><h3 style="margin-top:0">Lage in Wien</h3>${mapSVG(S.bezirk,{showPrice:true})}<div class="small muted">Ø Wohnungspreis 2025 je Bezirk (€/m²). ${S.bezirk}. Bezirk: Rang ${rank} von 23.</div></div>
+   </div>
+   <h3>Kennzahlen</h3>
+   <div class="rp-grid4">${kpi("Kaufpreis",eur(r.P))}${kpi("Gesamtinvestition",eur(r.total))}${kpi("Verkaufserlös",eur(r.sale))}${kpi("Gewinn vor Steuern",eur(r.gewinnVor),r.gewinnVor>=0?'pos':'neg')}
+    ${kpi("Gewinn nach Steuern",eur(r.gewinnNach),r.gewinnNach>=0?'pos':'neg')}${kpi("Marge auf Kosten",pct(r.marge),r.marge>=+S.zielmarge/100?'pos':r.marge<0?'neg':'')}${kpi("EK-Rendite p. a.",pct(r.roePa),r.roePa>=0.15?'pos':r.roePa<0?'neg':'')}${kpi("Projektdauer",r.months+" Monate")}</div>
+   <div class="rp-grid2" style="margin-top:12px">
+    <div><h3>Objektdaten</h3><table class="facts"><tbody>
+     <tr><td>Bezirk</td><td>${S.bezirk}. ${esc(d.name)}</td></tr><tr><td>Wohnfläche / Zimmer</td><td>${fmt(r.A)} m² / ${esc(S.zimmer)}</td></tr>
+     <tr><td>Baujahr-Klasse / Größe</td><td>${bjTxt} / ${sizeTxt}</td></tr><tr><td>Stockwerk / Lift</td><td>${stockTxt} / ${{ja:"ja",nein:"nein",geplant:"geplant"}[S.lift]}</td></tr>
+     <tr><td>Außenfläche</td><td>${{nein:"keine",ja:"vorhanden",neu:"wird errichtet"}[S.aussen]}</td></tr><tr><td>Ausstattung nach Sanierung</td><td>${AUSST[S.ausstattung][1]}</td></tr>
+     <tr><td>Besteuerung</td><td>${{privat:"Privat – ImmoESt 30 %",gmbh:"GmbH – KöSt 23 %",gmbhaus:"GmbH inkl. Ausschüttung",gewerb:"Gewerblich – ESt "+S.grenzsatz+" %"}[S.steuer]}</td></tr></tbody></table></div>
+    <div><h3>Die drei wichtigsten Zahlen</h3><table class="facts"><tbody>
+     <tr><td>Max. Kaufpreis für ${S.zielmarge} % Marge</td><td><b>${eur(ev.maxKP)}</b> ${ev.maxKP<r.P?`<span class="pill bad">−${eur(r.P-ev.maxKP)}</span>`:'<span class="pill ok">passt</span>'}</td></tr>
+     <tr><td>Break-even-Verkaufspreis</td><td><b>${fmt(ev.be)} €/m²</b> <span class="muted">(Ziel ${fmt(r.vkM2)})</span></td></tr>
+     <tr><td>Worst Case (−10 % Preis, +25 % Bau, +6 Mo.)</td><td><b style="color:${ev.worst.gewinnVor<0?'#b42020':'#137a3f'}">${eur(ev.worst.gewinnVor)}</b></td></tr>
+     <tr><td>Eigenkapitalbedarf</td><td><b>${eur(r.eigenkapital)}</b> <span class="muted">(Kredit ${eur(r.loan)})</span></td></tr></tbody></table></div>
+   </div>${foot}</div>`;
+  const parts=costParts(r);
+  const p2=`<div class="rp-page">${head(2)}<h2>Wirtschaftlichkeit</h2>
+   <h3>Vom Kaufpreis zum Gewinn</h3>${waterfallSVG(r)}
+   <div class="rp-grid2" style="margin-top:6px">
+    <div><h3>Kostenstruktur</h3>${donutSVG(parts)}</div>
+    <div><h3>Steuer &amp; Rendite</h3><table><tbody>
+     <tr><td>Gewinn vor Steuern</td><td class="n">${eur(r.gewinnVor)}</td></tr><tr><td class="muted">Bemessungsgrundlage</td><td class="n">${eur(r.steuerBasis)}</td></tr>
+     <tr><td class="muted">Steuern</td><td class="n">−${eur(r.steuer)}</td></tr><tr class="sum"><td>Gewinn nach Steuern</td><td class="n">${eur(r.gewinnNach)}</td></tr>
+     <tr><td>Eigenkapital</td><td class="n">${eur(r.eigenkapital)}</td></tr><tr><td>EK-Rendite Projekt / p. a.</td><td class="n">${pct(r.roe)} / ${pct(r.roePa)}</td></tr></tbody></table></div>
+   </div>
+   <h3>Detaillierte Kostenaufstellung</h3>
+   <div class="rp-grid2"><table><tbody>
+     <tr><td>Kaufpreis</td><td class="n">${eur(r.P)}</td></tr><tr><td class="muted">Grunderwerbsteuer ${S.grest} %</td><td class="n">${eur(r.nkGrest)}</td></tr>
+     <tr><td class="muted">Grundbucheintragung ${S.gbEig} %</td><td class="n">${eur(r.nkGb)}</td></tr><tr><td class="muted">Vertragserrichtung / Treuhand</td><td class="n">${eur(r.nkNotar)}</td></tr>
+     <tr><td class="muted">Makler Kauf</td><td class="n">${eur(r.nkMakler)}</td></tr><tr><td>Sanierung${+S.sonderumlage?' inkl. Sonderumlage':''}</td><td class="n">${eur(r.sanTotal)}</td></tr>
+   </tbody></table><table><tbody>
+     <tr><td class="muted">Zinsen (${S.zins} %, ${r.months} Mo.)</td><td class="n">${eur(r.zinsen)}</td></tr><tr><td class="muted">Pfandrecht + Bankspesen</td><td class="n">${eur(r.nkPfand+r.nkBank)}</td></tr>
+     <tr><td class="muted">Betriebskosten Haltedauer</td><td class="n">${eur(r.halte)}</td></tr><tr><td class="muted">Makler Verkauf + Marketing</td><td class="n">${eur(r.vkKosten)}</td></tr>
+     <tr class="sum"><td>Gesamtkosten</td><td class="n">${eur(r.total)}</td></tr><tr><td>Verkaufserlös (${fmt(r.vkM2)} €/m²)</td><td class="n">${eur(r.sale)}</td></tr>
+   </tbody></table></div>
+   <h3>Sanierungsbudget (${fmt(r.san.total/r.A)} €/m²)</h3>
+   ${(()=>{ const rows=r.san.rows.filter(x=>x.cost>0).map(x=>[x.c.l,x.opt[0],x.cost]);
+     if(r.san.extra) rows.push(["Ausstattungs-Aufpreis",AUSST[S.ausstattung][1],r.san.extra]);
+     rows.push(["Planung + Reserve",`${S.planung} % + ${S.reserve} %`,r.san.plan+r.san.res]);
+     const h=Math.ceil(rows.length/2), t=rs=>`<table><tbody>${rs.map(x=>`<tr><td>${x[0]}<div class="small muted">${x[1]}</div></td><td class="n">${eur(x[2])}</td></tr>`).join("")}</tbody></table>`;
+     return `<div class="rp-grid2">${t(rows.slice(0,h))}${t(rows.slice(h))}</div><table style="margin-top:2px"><tbody><tr class="sum"><td>Sanierung gesamt${r.san.override?' (Pauschale manuell)':''}</td><td class="n">${eur(r.san.total)}</td></tr></tbody></table>`; })()}
+   ${foot}</div>`;
+  const p3=`<div class="rp-page">${head(3)}<h2>Markt &amp; Szenarien</h2>
+   <h3>Preisleiter €/m²</h3>${ladderSVG([["Kaufpreis",kpM2,"#1d2330"],["Fairer Ankauf",fairM2,"#6b7385"],["Bezirks-Ø (Klasse)",refPrice(S,S.aussen!=="nein"),"#2f6db5"],["Break-even",ev.be,"#d98a00"],["Verkauf saniert",r.vkM2,"#1a8f4c"]])}
+   <div class="small muted">Bezirks-Ø = Statistik Austria, ${bjTxt}, ${sizeTxt}, ${S.aussen!=="nein"?"mit":"ohne"} Außenfläche (alle Zustände). Fairer Ankauf = lagebereinigter Ø abzüglich Sanierungsabschlag (Annahme).</div>
+   <h3>Preisentwicklung ${S.bezirk}. ${esc(d.name)} 2015–2025</h3>${lineSVG(d.trend)}
+   <div class="small muted">Ø Wohnungspreis €/m² aller Baujahre. Wachstum p. a.: 10 Jahre ${pct(c10)}, 5 Jahre ${pct(c5)}. Die Kalkulation unterstellt keine Marktsteigerung.</div>
+   <div class="rp-grid2" style="margin-top:4px">
+    <div><h3>Stresstest – Gewinn vor Steuern</h3>${hbarsSVG(ev.sc.map(([n,x])=>[n,x.gewinnVor]),{W:420,label:150})}</div>
+    <div><h3>Referenzpreise ${S.bezirk}. Bezirk (€/m²)</h3><table><thead><tr><th>Baujahr</th><th class="n">&lt;54</th><th class="n">54–77</th><th class="n">&gt;77</th></tr></thead><tbody>
+     ${["bis 1960","1961–90","ab 1991"].map((b,bi)=>`<tr${bi==+S.baujahr?' style="background:#fff4f6;font-weight:700"':''}><td>${b}</td>${[0,1,2].map(i=>`<td class="n">${fmt(d.ohne[bi*3+i])}</td>`).join("")}</tr>`).join("")}
+     </tbody></table><div class="small muted" style="margin-top:4px">ohne Außenfläche; mit Außenfläche in dieser Klasse: ${fmt(refPrice(S,true))} €/m²</div></div>
+   </div>${foot}</div>`;
+  const p4=`<div class="rp-page">${head(4)}<h2>So wird’s ein besserer Deal</h2>
+   <div class="rp-grid3">${kpi("Kaufpreis höchstens",eur(ev.maxKP),ev.maxKP>=r.P?'pos':'neg')}${kpi("… oder Verkauf mind.",fmt(tg.vk)+" €/m²",tg.vk<=r.vkM2?'pos':'neg')}${kpi("… oder Sanierung max.",tg.san==null?"n. erreichbar":eur(tg.san),tg.san!=null&&tg.san>=r.sanTotal?'pos':'neg')}</div>
+   ${lv.list.length?`<h3>Wirkung der Hebel auf den Gewinn</h3>${hbarsSVG(lv.list.slice(0,9).map(l=>[l.t.length>40?l.t.slice(0,39)+"…":l.t,l.dG]),{label:250})}
+   <table><thead><tr><th></th><th>Maßnahme</th><th class="n">Δ Gewinn</th><th class="n">Marge</th><th>Ergebnis</th></tr></thead><tbody>
+    ${lv.list.slice(0,9).map((l,i)=>`<tr class="avoid"><td><span class="num-badge">${i+1}</span></td><td><b>${esc(l.t)}</b><div class="small muted">${esc(l.d||"")}</div></td><td class="n">${l.dG>=0?'+':''}${eur(l.dG)}</td><td class="n">${pct(l.ev.r.marge)}</td><td><span class="pill ${l.ev.cls}">${l.ev.txt}</span></td></tr>`).join("")}</tbody></table>
+   <div class="box" style="margin-top:8px"><b>Alle kombinierbaren Hebel zusammen:</b> Gewinn ${eur(lv.combo.r.gewinnVor)} · Marge ${pct(lv.combo.r.marge)} · ${lv.combo.s} Punkte → <span class="pill ${lv.combo.cls}">${lv.combo.txt}</span></div>`:`<p class="muted">Keine weiteren Hebel – der Deal ist bereits optimiert.</p>`}
+   <h3>Risiken &amp; To-dos vor dem Kaufanbot</h3><ul class="fl">${flags}
+    <li><span class="pill info">TO-DO</span><span>Grundbuchauszug, WE-Vertrag, Nutzwertgutachten, Protokolle der Eigentümerversammlungen, Rücklage &amp; Vorausschau anfordern.</span></li>
+    <li><span class="pill info">TO-DO</span><span>Bauakt MA 37 (Konsens) einsehen; mindestens 2 Baumeister-Angebote; Kaufanbot mit Finanzierungsvorbehalt.</span></li></ul>
+   ${foot}</div>`;
+  const rc=rentCalc(S,r);
+  const p5=`<div class="rp-page">${head(5)}<h2>Vermietung nach Sanierung</h2>
+   <div class="rp-grid4">${kpi("Vermietbarkeit",`<span class="pill ${rc.grade[0]}" style="font-size:11px">${rc.grade[1]}</span>`)}${kpi("Nettomiete realistisch",eur(rc.rows[1].miete)+"/Mo.")}${kpi("Bruttorendite realistisch",pct(rc.rows[1].brutto))}${kpi("Cashflow / Monat",(rc.rows[1].cf>=0?'+':'')+eur(rc.rows[1].cf),rc.rows[1].cf>=0?'pos':'neg')}</div>
+   <h3>Miete je Szenario (Hauptmietzins netto)</h3>${rentBarsSVG(rc.rows)}
+   <h3>Rendite &amp; Cashflow</h3>${rentTable(rc,"n")}
+   <div class="small muted" style="margin-top:4px">${rc.rows.map(x=>`<b>${x.n}:</b> ${x.desc}`).join(" · ")}. Investition ${eur(rc.invest)} (Kauf, Nebenkosten, Sanierung, Finanzierungsspesen); Kreditrate ${eur(rc.rate)}/Mo. über ${S.tilgJahre||25} Jahre; nicht umlagefähige Kosten ${fmt(+S.nonUml,2)} €/m²/Mo.</div>
+   <h3>Mietrechtliche Einordnung</h3><div class="box small">${rentNotes(rc)}</div>
+   <div class="small muted" style="margin-top:6px">Quellen: Richtwert Wien ${fmt(RICHTWERT,2)} €/m² ab 1.4.2026 (Statistik Austria, Valorisierung § 5 RichtWG); Angebotsmieten je Bezirk: Medianwerte mietdaten.at und rentradar.rentals (Nov. 2026). Angebotsmieten liegen meist über den tatsächlichen Vertragsmieten.</div>
+   ${foot}</div>`;
+  return `<div class="rp">${p1}${p2}${p3}${p4}${p5}</div>`;
+}
+function paginate(root){
+  const isBody=c=>!["rp-foot","rp-head","rp-cover"].some(k=>c.classList.contains(k)) && c.tagName!=="H2";
+  for(let i=0;i<root.querySelectorAll(".rp-page").length;i++){
+    const cur=root.querySelectorAll(".rp-page")[i];
+    for(let guard=0;guard<40;guard++){
+      const r=cur.getBoundingClientRect(), mm=r.width/210, limit=r.top+(297-17)*mm;
+      const body=[...cur.children].filter(isBody);
+      if(body.length<2 || Math.max(...body.map(c=>c.getBoundingClientRect().bottom))<=limit) break;
+      let nx=cur.nextElementSibling;
+      if(!nx || !nx.dataset.cont){
+        nx=document.createElement("div"); nx.className="rp-page"; nx.dataset.cont="1";
+        const hd=cur.querySelector(".rp-head")||root.querySelector(".rp-head"); if(hd) nx.appendChild(hd.cloneNode(true));
+        const t=cur.querySelector("h2"); const h=document.createElement("h2"); h.textContent=(t?t.textContent.replace(" (Fortsetzung)",""):"Übersicht")+" (Fortsetzung)"; nx.appendChild(h);
+        nx.appendChild(cur.querySelector(".rp-foot").cloneNode(true)); cur.after(nx);
+      }
+      const anchor=nx.querySelector("h2").nextSibling;
+      const mv=body[body.length-1]; nx.insertBefore(mv, anchor);
+      const prev=body[body.length-2]; if(prev.tagName==="H3" && body.length>2) nx.insertBefore(prev, mv);
+    }
+  }
+  const all=[...root.querySelectorAll(".rp-page")];
+  all.forEach((pg,i)=>{ const pn=pg.querySelector(".rp-pn"); if(pn) pn.textContent=`Seite ${i+1} / ${all.length}`; });
+}
+function fitExport(){ const b=$("#exportBody .rp"); if(b) b.style.zoom = innerWidth<820 ? ((innerWidth-12)/800).toFixed(3) : ""; }
+function openExport(){ $("#exportBody").innerHTML=reportHTML(); $("#exportModal").classList.add("open"); paginate($("#exportBody")); fitExport(); document.body.classList.add("modal-open"); }
+window.addEventListener("resize",fitExport);
+window.addEventListener("beforeprint",()=>{ const b=$("#exportBody .rp"); if(b) b.style.zoom=""; });
+window.addEventListener("afterprint",fitExport);
+function closeExport(){ $("#exportModal").classList.remove("open"); document.body.classList.remove("modal-open"); }
+function downloadHTML(){
+  if(!$("#exportModal").classList.contains("open")) openExport();
+  const html=`<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Flip-Check ${esc(S.name||"Bericht")}</title><style>body{margin:0;background:#e9ebef;padding:10mm 0}${REPORT_CSS}@media print{body{background:#fff;padding:0}}@page{size:A4;margin:0}</style></head><body>${$("#exportBody").innerHTML}</body></html>`;
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([html],{type:"text/html"})); a.download=`Flip-Check_${(S.name||"Bericht").replace(/[^\wäöüÄÖÜß-]+/g,"_")}.html`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
 /* ---------- Speichern ---------- */
 const LS="wienFlip.objects";
 function loadAll(){ try{return JSON.parse(localStorage.getItem(LS))||{};}catch{return {};} }
@@ -653,8 +1147,14 @@ $("#btnSave").onclick=()=>{ const n=S.name||prompt("Name für dieses Objekt:","O
 $("#btnNew").onclick=()=>{ S=JSON.parse(JSON.stringify(DEFAULTS)); syncInputs(); update(); refreshSaved(); go(0); };
 $("#btnDel").onclick=()=>{ const k=$("#savedSel").value; if(!k) return; if(!confirm(`„${k}“ löschen?`)) return; const all=loadAll(); delete all[k]; localStorage.setItem(LS,JSON.stringify(all)); refreshSaved(); };
 $("#savedSel").onchange=e=>{ const all=loadAll(); const o=all[e.target.value]; if(!o) return; S={...JSON.parse(JSON.stringify(DEFAULTS)),...o,comps:{...DEFAULTS.comps,...o.comps},checks:{...o.checks}}; syncInputs(); update(); };
-$("#btnPrint").onclick=()=>window.print();
+$("#btnPrint").onclick=openExport;
+$("#btnPdf").onclick=()=>window.print(); $("#btnHtml").onclick=downloadHTML; $("#btnClose").onclick=closeExport;
+let printedFromApp=false;
+window.addEventListener("beforeprint",()=>{ if(!$("#exportModal").classList.contains("open")){ printedFromApp=true; $("#exportBody").innerHTML=reportHTML(); $("#exportModal").classList.add("open"); paginate($("#exportBody")); } });
+window.addEventListener("afterprint",()=>{ if(printedFromApp){ printedFromApp=false; closeExport(); } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeExport(); });
 
+document.head.insertAdjacentHTML("beforeend",`<style>${REPORT_CSS}</style>`);
 buildTabs(); buildBezirk(); buildComps(); buildChecks(); bindInputs(); syncInputs(); refreshSaved(); go(0); update();
 </script>
 </body>
