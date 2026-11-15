@@ -405,7 +405,7 @@ const DEFAULTS = {
   comps:{...PRESETS.standard},
   checks:{}, sonderumlage:0,
   ausstattung:"geh", vkOverride:"", mVor:2, mBau:4, mVerk:4, bk:3.6, maklerVerk:3, marketing:3500,
-  steuer:"privat", grenzsatz:48, zielmarge:20,
+  steuer:"gmbh", grenzsatz:48, zielmarge:20,
   mietRecht:"auto", befristet:"ja", lagezuschlag:"", nonUml:1.2, tilgJahre:25,
 };
 delete DEFAULTS.comps.reserve; delete DEFAULTS.comps.planung;
@@ -1041,7 +1041,7 @@ function reportHTML(){
      <tr><td>Bezirk</td><td>${S.bezirk}. ${esc(d.name)}</td></tr><tr><td>Wohnfläche / Zimmer</td><td>${fmt(r.A)} m² / ${esc(S.zimmer)}</td></tr>
      <tr><td>Baujahr-Klasse / Größe</td><td>${bjTxt} / ${sizeTxt}</td></tr><tr><td>Stockwerk / Lift</td><td>${stockTxt} / ${{ja:"ja",nein:"nein",geplant:"geplant"}[S.lift]}</td></tr>
      <tr><td>Außenfläche</td><td>${{nein:"keine",ja:"vorhanden",neu:"wird errichtet"}[S.aussen]}</td></tr><tr><td>Ausstattung nach Sanierung</td><td>${AUSST[S.ausstattung][1]}</td></tr>
-     <tr><td>Besteuerung</td><td>${{privat:"Privat – ImmoESt 30 %",gmbh:"GmbH – KöSt 23 %",gmbhaus:"GmbH inkl. Ausschüttung",gewerb:"Gewerblich – ESt "+S.grenzsatz+" %"}[S.steuer]}</td></tr></tbody></table></div>
+     <tr><td>Besteuerung</td><td>${{privat:"Privat – ImmoESt 30 %",gmbh:"GmbH – KöSt 23 % (ohne Ausschüttung)",gmbhaus:"GmbH inkl. Ausschüttung",gewerb:"Gewerblich – ESt "+S.grenzsatz+" %"}[S.steuer]}</td></tr></tbody></table></div>
     <div><h3>Die drei wichtigsten Zahlen</h3><table class="facts"><tbody>
      <tr><td>Max. Kaufpreis für ${S.zielmarge} % Marge</td><td><b>${eur(ev.maxKP)}</b> ${ev.maxKP<r.P?`<span class="pill bad">−${eur(r.P-ev.maxKP)}</span>`:'<span class="pill ok">passt</span>'}</td></tr>
      <tr><td>Break-even-Verkaufspreis</td><td><b>${fmt(ev.be)} €/m²</b> <span class="muted">(Ziel ${fmt(r.vkM2)})</span></td></tr>
