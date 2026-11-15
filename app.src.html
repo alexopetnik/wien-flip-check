@@ -305,12 +305,7 @@ body.modal-open{overflow:hidden}
     </div>
   </div>
 
-  <!-- 6 AUSWERTUNG -->
-  <div class="page" data-title="Auswertung">
-    <div class="card" id="report"></div>
-  </div>
-
-  <!-- 7 VERMIETUNG -->
+  <!-- 6 VERMIETUNG -->
   <div class="page" data-title="Vermietung" id="pgRent">
     <div class="card"><h2>Vermietung nach Sanierung</h2>
       <p class="hint">Was bringt die Wohnung, wenn du sie nach der Sanierung vermietest statt verkaufst (oder der Verkauf nicht klappt)? Drei Mietszenarien, berechnet mit Wiener Angebotsmieten je Bezirk bzw. dem Richtwert-Mietrecht.</p>
@@ -325,9 +320,14 @@ body.modal-open{overflow:hidden}
     </div>
   </div>
 
-  <!-- 8 DEAL -->
+  <!-- 7 DEAL -->
   <div class="page" data-title="Deal verbessern">
     <div class="card" id="deal"></div>
+  </div>
+
+  <!-- 8 AUSWERTUNG -->
+  <div class="page" data-title="Auswertung">
+    <div class="card" id="report"></div>
   </div>
 
 
@@ -662,7 +662,7 @@ function renderSide(ev){
   </div>
   <div class="card" style="margin-top:12px;padding:12px 14px"><b class="small">Risiken &amp; Hinweise</b>
    <ul class="flags">${ev.rk.flags.length? ev.rk.flags.map(f=>`<li><span class="pill ${f[0]==='ko'?'bad':f[0]}">${f[0]==='ko'?'K.O.':f[0]==='bad'?'hoch':f[0]==='warn'?'mittel':'Info'}</span><span>${f[1]}</span></li>`).join("") : '<li class="muted">Keine Auffälligkeiten erfasst – Checkliste unter „Haus &amp; Recht“ ausfüllen.</li>'}</ul></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="noprint" onclick="go(5)">Auswertung</button><button class="noprint" onclick="go(7)">Deal verbessern</button><button class="noprint" onclick="go(6)" style="grid-column:span 2">Vermietung nach Sanierung</button></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="noprint" onclick="go(7)">Auswertung</button><button class="noprint" onclick="go(6)">Deal verbessern</button><button class="noprint" onclick="go(5)" style="grid-column:span 2">Vermietung nach Sanierung</button></div>
   <button class="pri noprint" style="width:100%;margin-top:8px" onclick="openExport()">Bericht exportieren (PDF / HTML)</button>`;
 }
 
