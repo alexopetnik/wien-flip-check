@@ -1155,6 +1155,7 @@ window.addEventListener("afterprint",()=>{ if(printedFromApp){ printedFromApp=fa
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeExport(); });
 
 document.head.insertAdjacentHTML("beforeend",`<style>${REPORT_CSS}</style>`);
+if("serviceWorker" in navigator && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(()=>{});
 buildTabs(); buildBezirk(); buildComps(); buildChecks(); bindInputs(); syncInputs(); refreshSaved(); go(0); update();
 </script>
 </body>
