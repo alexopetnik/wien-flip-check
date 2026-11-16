@@ -84,12 +84,16 @@ aside{position:sticky;top:16px;align-self:start}
 .flags{margin:0;padding:0;list-style:none}
 .flags li{padding:7px 0;border-bottom:1px solid var(--line);display:flex;gap:8px;font-size:13px}
 .flags li:last-child{border-bottom:0}
+.flags li .pill{align-self:flex-start;flex:none}
 .bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--chip);margin:6px 0 8px}
 .bar div{height:100%}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 .refbox{background:#f8f9fb;border:1px dashed #cfd5df;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:12px}
 .refbox b{font-variant-numeric:tabular-nums}
+.dem-tbl{font-size:12.5px}.dem-tbl th,.dem-tbl td{padding:4px 6px;border-bottom:1px solid #eceef2;text-align:left;white-space:nowrap}.dem-tbl .num{text-align:right}
+.dem-parts td{padding:5px 6px;border-bottom:1px solid #eceef2;vertical-align:middle}
+.rp .dem-tbl{font-size:8.3px}.rp .dem-tbl th,.rp .dem-tbl td{padding:1px 4px;line-height:1.25}.rp .dem-parts td{padding:2px 4px;font-size:9.5px}.rp .dem-parts .small{font-size:8px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:800px){.two{grid-template-columns:1fr}}
 .navbtns{display:flex;justify-content:space-between;margin-top:6px}
@@ -324,7 +328,15 @@ body.modal-open{overflow:hidden}
     </div>
   </div>
 
-  <!-- 6 VERMIETUNG -->
+  <!-- 6 NACHFRAGE -->
+  <div class="page" data-title="Nachfrage" id="pgDem">
+    <div class="card"><h2>Nachfrage im Bezirk</h2>
+      <p class="hint">Wie gut trifft die Wohnung nach der Sanierung die Nachfrage? Grundlage sind die Haushalts- und Wohnungsstruktur je Bezirk (Registerzählung 2023) und die Bevölkerungsprognose 2025–2035 der Stadt Wien. Daraus wird geschätzt, welche Wohnungsgrößen im Bezirk knapp sind.</p>
+      <div id="demOut"></div>
+    </div>
+  </div>
+
+  <!-- 7 VERMIETUNG -->
   <div class="page" data-title="Vermietung" id="pgRent">
     <div class="card"><h2>Vermietung nach Sanierung</h2>
       <p class="hint">Was bringt die Wohnung, wenn du sie nach der Sanierung vermietest statt verkaufst (oder der Verkauf nicht klappt)? Drei Mietszenarien, berechnet mit Wiener Angebotsmieten je Bezirk bzw. dem Richtwert-Mietrecht.</p>
@@ -371,6 +383,7 @@ body.modal-open{overflow:hidden}
 <script>
 const DATA = __DATA__;
 const MAP = __MAP__;
+const DEM = __DEMAND__;
 const YEARS = [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
 
 // Sanierungs-Gewerke: [key, label, options:[label, factor], unitPrice, unit, desc]
@@ -578,6 +591,8 @@ function scoreOf(st){
   s += Math.max(-15, Math.min(10, (r.roePa-0.20)*40));
   if(worst.gewinnVor<0) s -= Math.min(15, -worst.gewinnVor/r.total*150);
   s -= rk.pts*0.6;
+  const dm=demand(st,r);
+  s += Math.max(-6,Math.min(6,(dm.fit-60)*0.15));
   s = Math.max(0,Math.min(100,Math.round(s)));
   let cls, txt, sub;
   const ziel=+st.zielmarge/100;
@@ -585,7 +600,7 @@ function scoreOf(st){
   else if(r.marge>=ziel && s>=65){ cls="ok"; txt="Kauf lohnt sich"; sub="Marge über Ziel, Risiko vertretbar."; }
   else if(r.marge>=Math.max(0.08,ziel*0.5) && s>=40){ cls="warn"; txt="Grenzwertig – nachverhandeln"; sub="Nur mit niedrigerem Kaufpreis oder schlankerer Sanierung."; }
   else { cls="bad"; txt="Lohnt sich nicht"; sub="Marge zu gering für das Sanierungsrisiko."; }
-  return {r,rk,s,cls,txt,sub,worst};
+  return {r,rk,s,cls,txt,sub,worst,dm};
 }
 function evaluate(st){
   const e=scoreOf(st), r=e.r;
@@ -691,7 +706,7 @@ function update(){
   $("#vkHint").textContent=`Referenz: ${fmt(r.refSale)} €/m² (${AUSST[S.ausstattung][1]} +${AUSST[S.ausstattung][0]*100} %, Lage ${r.lfSum>=0?'+':''}${fmt(r.lfSum*100)} %)`;
   $("#refVerk").innerHTML=`Verkaufserlös: <b>${fmt(r.vkM2)} €/m² × ${fmt(r.A)} m²${r.zub.wert?` ${r.zub.wert>0?'+':'−'} Zubehör ${eur(Math.abs(r.zub.wert))}`:""} = ${eur(r.sale)}</b> · Projektdauer <b>${r.months} Monate</b> · Break-even-Verkaufspreis <b>${fmt(ev.be)} €/m²</b><br>
    Plausibilität: Ø Neubau/Erstbezug ab 1991 im ${S.bezirk}. Bezirk: <b>${fmt(DATA[S.bezirk][S.aussen!=="nein"?"mit":"ohne"][6+sizeClass(+S.flaeche)])} €/m²</b> – ein sanierter Altbau liegt meist in dieser Größenordnung.`;
-  renderSide(ev); renderReport(ev); renderDeal(ev); renderRent(ev);
+  renderSide(ev); renderReport(ev); renderDeal(ev); renderRent(ev); renderDemand(ev);
   const ms=$("#mobScore"); ms.className=ev.cls; ms.innerHTML=`${ev.s} Punkte<small>${esc(ev.txt)}</small>`;
 }
 
@@ -707,10 +722,11 @@ function renderSide(ev){
     <div class="kpi"><div class="k">EK-Rendite p. a. (n. St.)</div><div class="v ${r.roePa>=0.15?'pos':r.roePa<0?'neg':''}">${pct(r.roePa)}</div></div>
     <div class="kpi"><div class="k">Max. Kaufpreis für ${S.zielmarge} % Marge</div><div class="v">${eur(ev.maxKP)}</div></div>
     <div class="kpi"><div class="k">Break-even Verkauf</div><div class="v">${fmt(ev.be)} €/m²</div></div>
+    <div class="kpi" style="grid-column:span 2;cursor:pointer" onclick="go(5)"><div class="k">Nachfrage-Fit im Bezirk</div><div class="v"><span class="pill ${ev.dm.grade[0]}" style="font-size:12px">${ev.dm.fit} / 100 · ${ev.dm.grade[1]}</span></div></div>
   </div>
   <div class="card" style="margin-top:12px;padding:12px 14px"><b class="small">Risiken &amp; Hinweise</b>
    <ul class="flags">${ev.rk.flags.length? ev.rk.flags.map(f=>`<li><span class="pill ${f[0]==='ko'?'bad':f[0]}">${f[0]==='ko'?'K.O.':f[0]==='bad'?'hoch':f[0]==='warn'?'mittel':'Info'}</span><span>${f[1]}</span></li>`).join("") : '<li class="muted">Keine Auffälligkeiten erfasst – Checkliste unter „Haus &amp; Recht“ ausfüllen.</li>'}</ul></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="noprint" onclick="go(7)">Auswertung</button><button class="noprint" onclick="go(6)">Deal verbessern</button><button class="noprint" onclick="go(5)" style="grid-column:span 2">Vermietung nach Sanierung</button></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="noprint" onclick="go(8)">Auswertung</button><button class="noprint" onclick="go(7)">Deal verbessern</button><button class="noprint" onclick="go(6)">Vermietung</button><button class="noprint" onclick="go(5)">Nachfrage</button></div>
   <button class="pri noprint" style="width:100%;margin-top:8px" onclick="openExport()">Bericht exportieren (PDF / HTML)</button>`;
 }
 
@@ -938,6 +954,108 @@ const LZ_DEF = {1:16.0,2:3.3,3:4.2,4:5.3,5:1.4,6:5.3,7:5.3,8:5.3,9:5.3,10:0,11:0
 const LOGO=__LOGOJSON__;
 const logo=(px,st="")=>LOGO.replace("<svg ",`<svg width="${px}" height="${px}" style="vertical-align:middle;${st}" `);
 function annuity(L, zinsPa, years){ const i=zinsPa/100/12, n=years*12; return i>0? L*i/(1-Math.pow(1+i,-n)) : L/n; }
+/* ---------- Nachfrage ---------- */
+const DEM_CL=[["bis 45 m²","1–2 Zi."],["45–60 m²","2 Zi."],["60–90 m²","3 Zi."],["90–130 m²","4 Zi."],["ab 130 m²","5+ Zi."]];
+const DEM_W=[[.45,.40,.15,0,0],[.05,.35,.50,.10,0],[0,.05,.50,.38,.07],[0,0,.15,.50,.35]];
+const demCls=a=> a<45?0: a<60?1: a<90?2: a<130?3:4;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function demDistrict(b){
+  const d=DEM[b], D=[0,0,0,0,0];
+  d.hh.forEach((h,i)=>DEM_W[i].forEach((w,k)=>D[k]+=h*w));
+  const P=D.map((v,k)=>v/Math.max(0.005,d.stock[k]));
+  const hot=D.map((v,k)=>Math.sqrt(v)*Math.min(P[k],2.5));
+  const top=[0,1,2,3,4].sort((x,y)=>hot[y]-hot[x]).slice(0,2).sort((x,y)=>x-y);
+  let grp;
+  if(d.fam>=0.72||d.kids>=0.16) grp="Familien mit Kindern";
+  else if(d.hh[0]>=0.5&&d.a2544>=0.35) grp="Singles & junge Berufstätige";
+  else if(d.a2544>=0.34) grp="junge Paare & Singles";
+  else if(d.eig>=0.15) grp="Paare & Eigennutzer mit Budget";
+  else grp="Singles & Paare";
+  return {d,D,P,top,grp};
+}
+function demand(st,r){
+  const b=st.bezirk, A=+st.flaeche||1, z=+st.zimmer||1, dd=demDistrict(b), d=dd.d, k=demCls(A);
+  const parts=[];
+  const s1=30+70*(0.6*clamp((dd.P[k]-0.5)/1.0,0,1)+0.4*dd.D[k]/Math.max(...dd.D));
+  parts.push(["Größe passt zur Haushaltsstruktur",s1,30,`${DEM_CL[k][0]}: Nachfrage/Angebot ${fmt(dd.P[k],2)}`]);
+  const qz=A/z; let s2= qz>=22&&qz<=30?100 : qz<22? 100-(22-qz)*9 : 100-(qz-30)*5;
+  s2+= st.grundriss==="mittel"?-10: st.grundriss==="schlecht"?-30:0;
+  parts.push(["Zimmer & Grundriss",clamp(s2,10,100),20,`${fmt(qz)} m² je Zimmer`]);
+  const inner=+b<=9;
+  const s3= st.aussen==="nein"? (inner?50:35) : 100;
+  parts.push(["Außenfläche",s3,15,st.aussen==="nein"?"keine":"vorhanden"]);
+  const L=st.lift;
+  const s4={sout:20,eg:55,og12:90}[st.stock] ?? (st.stock==="og3"? (L==="ja"?95:L==="geplant"?75:35) : (L==="ja"?100:L==="geplant"?80:45));
+  parts.push(["Stockwerk & Lift",s4,15,{sout:"Souterrain",eg:"Erdgeschoß",og12:"1.–2. Stock",og3:"ab 3. Stock",dg:"Dachgeschoß"}[st.stock]+(["og3","dg"].includes(st.stock)?`, Lift ${L}`:"")]);
+  const typ=DATA[b].trend[10]*70, q=r.sale/typ;
+  const s5=q<=1.3?100: clamp(100-(q-1.3)*60,20,100);
+  parts.push(["Preis / Käuferkreis",s5,10,`Verkaufspreis = ${fmt(q,1)}× typische 70-m²-Wohnung im Bezirk`]);
+  const s6=clamp(50+d.grow*500+(d.a2544-0.32)*200,20,100);
+  parts.push(["Bezirksdynamik",s6,10,`Bevölkerung 2025–35 ${d.grow>=0?'+':''}${fmt(d.grow*100,1)} %, 25–44-Jährige ${fmt(d.a2544*100)} %`]);
+  const fit=Math.round(parts.reduce((a,p)=>a+p[1]*p[2],0)/100);
+  const grade= fit>=75?["ok","sehr gut","rasche Vermarktung realistisch (≈ 1–3 Monate)"]: fit>=60?["ok","gut","marktübliche Vermarktungsdauer"]: fit>=45?["warn","eingeschränkt","längere Vermarktung, eher Verhandlungsspielraum für Käufer"]:["bad","Nischenobjekt","deutlich längere Vermarktung, Preisabschlag einkalkulieren"];
+  const tips=[];
+  if(qz>32&&A>=50) tips.push(`Zusätzliches Zimmer einplanen (${Math.round(A/27)} statt ${z} Zimmer) – kleine Zusatzräume für Homeoffice sind gefragt.`);
+  if(qz<18) tips.push("Zimmer zusammenlegen oder offene Wohnküche – zu kleine Räume schrecken Käufer ab.");
+  if(st.aussen==="nein") tips.push("Außenfläche prüfen: Hofbalkon oder Loggia (Beschluss der Eigentümer + Baubewilligung nötig) erweitert den Käuferkreis deutlich.");
+  if(st.stock==="og3"&&L==="nein") tips.push("Ohne Lift ab dem 3. Stock fallen Familien und ältere Käufer weg – Liftnachrüstung in der Eigentümergemeinschaft anstoßen.");
+  if(st.stock==="eg"||st.stock==="sout") tips.push("Erdgeschoß: Sichtschutz, Sicherheitstüren/-fenster und eine Gartennutzung (falls möglich) aufwerten.");
+  if(dd.P[k]<0.85){ const alt=dd.top.filter(x=>x!==k); if(alt.length) tips.push(`Diese Größe ist im ${b}. Bezirk eher reichlich vorhanden. Knapper sind ${alt.map(x=>DEM_CL[x][0]+" ("+DEM_CL[x][1]+")").join(" und ")}${k>=3&&alt.some(x=>x<=1)?" – eine Teilung in zwei Einheiten kann sich lohnen":""}${k<=1&&alt.some(x=>x>=2)?" – eine Zusammenlegung mit der Nachbarwohnung kann sich lohnen":""}.`); }
+  tips.push(`Vermarktung auf ${dd.grp} ausrichten.`);
+  return {fit,grade,parts,cls:k,dd,qz,tips};
+}
+function demMapSVG(k,sel,w="100%"){
+  const vals=[]; for(let i=1;i<=23;i++) vals.push(demDistrict(i).P[k]);
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+  let p="",l="";
+  for(let i=1;i<=23;i++){ const b=MAP.b[i], v=vals[i-1], t=(v-mn)/Math.max(0.01,mx-mn), isSel=String(i)===String(sel);
+    p+=`<path d="${b.d}" data-b="${i}" fill="${heat(t)}" stroke="${isSel?'#1d2330':'#fff'}" stroke-width="${isSel?2.6:1}" style="cursor:pointer"><title>${i}. ${DATA[i].name}: Nachfrage/Angebot ${fmt(v,2)}</title></path>`;
+    l+=`<text x="${b.x}" y="${b.y+3}" text-anchor="middle" font-size="${["1","4","5","6","7","8"].includes(String(i))&&!isSel?9:11}" font-weight="${isSel?800:600}" fill="${t>0.6?'#fff':'#1d2330'}" pointer-events="none">${i}</text>`; }
+  const lg=`<g transform="translate(10,${MAP.h-28})"><defs><linearGradient id="hgd"><stop offset="0" stop-color="${heat(0)}"/><stop offset=".5" stop-color="${heat(.5)}"/><stop offset="1" stop-color="${heat(1)}"/></linearGradient></defs><rect width="150" height="9" rx="3" fill="url(#hgd)"/><text y="22" font-size="9" fill="#6b7385">reichlich Angebot</text><text x="150" y="22" font-size="9" text-anchor="end" fill="#6b7385">knapp / gefragt</text></g>`;
+  return `<svg class="wmap" viewBox="0 0 ${MAP.w} ${MAP.h}" width="${w}" xmlns="http://www.w3.org/2000/svg">${p}${l}${lg}</svg>`;
+}
+function demBarsSVG(dd,k){
+  const W=360,H=165,bw=22,gap=72,mx=Math.max(...dd.D,...dd.d.stock), y=v=>H-34-(H-68)*v/mx;
+  let g="";
+  DEM_CL.forEach((c,i)=>{ const x=30+i*gap, hl=i===k;
+    g+=`<rect x="${x}" y="${y(dd.D[i])}" width="${bw}" height="${H-34-y(dd.D[i])}" rx="3" fill="${hl?'#c8102e':'#e88a97'}"/><rect x="${x+bw+2}" y="${y(dd.d.stock[i])}" width="${bw}" height="${H-34-y(dd.d.stock[i])}" rx="3" fill="${hl?'#1d2330':'#9aa3b5'}"/>
+    <text x="${x+bw}" y="${y(Math.max(dd.D[i],dd.d.stock[i]))-4}" text-anchor="middle" font-size="9.5" font-weight="700" fill="${dd.P[i]>=1.1?'#1f8a4c':dd.P[i]<0.85?'#c8102e':'#3a4255'}">${fmt(dd.P[i],2)}</text>
+    <text x="${x+bw}" y="${H-20}" text-anchor="middle" font-size="9.5" font-weight="${hl?800:500}" fill="#1d2330">${c[0]}</text><text x="${x+bw}" y="${H-8}" text-anchor="middle" font-size="8.5" fill="#6b7385">${c[1]}</text>`; });
+  return `<svg viewBox="0 0 ${W+20} ${H}" width="100%" style="max-width:520px">${g}<g transform="translate(30,6)" font-size="9" fill="#3a4255"><rect width="9" height="9" fill="#c8102e"/><text x="13" y="8">Nachfrage (Haushalte)</text><rect x="125" width="9" height="9" fill="#1d2330"/><text x="138" y="8">Bestand (Wohnungen)</text><text x="250" y="8">Zahl = Verhältnis</text></g></svg>`;
+}
+function demPartsHTML(dm){
+  return `<table class="dem-parts"><tbody>${dm.parts.map(p=>`<tr><td>${p[0]}<div class="muted small">${p[3]}</div></td><td style="width:42%"><div style="background:#eef0f4;border-radius:5px;height:9px;overflow:hidden"><div style="width:${Math.round(p[1])}%;height:9px;background:${p[1]>=70?'#1f8a4c':p[1]>=45?'#d99a00':'#c8102e'}"></div></div></td><td class="num" style="width:58px"><b>${Math.round(p[1])}</b> <span class="muted small">×${p[2]}%</span></td></tr>`).join("")}</tbody></table>`;
+}
+function demTableHTML(k,sel,click){
+  let rows="";
+  for(let i=1;i<=23;i++){ const dd=demDistrict(i), d=dd.d, isSel=String(i)===String(sel);
+    rows+=`<tr data-b="${i}" style="${click?'cursor:pointer;':''}${isSel?'background:#fff2f4;font-weight:700':''}"><td>${i}. ${DATA[i].name}</td><td class="num">${fmt(d.hh[0]*100)} %</td><td class="num">${fmt(d.hh[1]*100)} %</td><td class="num">${fmt((d.hh[2]+d.hh[3])*100)} %</td><td class="num">${d.grow>=0?'+':''}${fmt(d.grow*100,1)} %</td><td>${dd.top.map(x=>DEM_CL[x][0]).join(", ")}</td><td>${dd.grp}</td><td class="num" style="color:${dd.P[k]>=1.1?'#1f8a4c':dd.P[k]<0.85?'#c8102e':'inherit'}">${fmt(dd.P[k],2)}</td></tr>`; }
+  return `<table class="dem-tbl"><thead><tr><th>Bezirk</th><th class="num">1 Pers.</th><th class="num">2 Pers.</th><th class="num">3+ Pers.</th><th class="num">Bevölk. 2025–35</th><th>knappste Größen</th><th>Zielgruppe</th><th class="num">${DEM_CL[k][0]}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderDemand(ev){
+  const dm=ev.dm, dd=dm.dd, d=dd.d, b=S.bezirk;
+  $("#demOut").innerHTML=`
+   <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:10px">
+    <div class="kpi"><div class="k">Nachfrage-Fit</div><div class="v"><span class="pill ${dm.grade[0]}" style="font-size:13px">${dm.fit} / 100 · ${dm.grade[1]}</span></div></div>
+    <div class="kpi"><div class="k">Zielgruppe im ${b}. Bezirk</div><div class="v" style="font-size:15px">${dd.grp}</div></div>
+    <div class="kpi"><div class="k">Knappste Größen</div><div class="v" style="font-size:15px">${dd.top.map(x=>DEM_CL[x][0]+" ("+DEM_CL[x][1]+")").join(", ")}</div></div>
+    <div class="kpi"><div class="k">Deine Größe ${DEM_CL[dm.cls][0]}</div><div class="v" style="color:${dd.P[dm.cls]>=1.1?'#1f8a4c':dd.P[dm.cls]<0.85?'#c8102e':'inherit'}">${fmt(dd.P[dm.cls],2)} <small class="muted">Nachfrage/Angebot</small></div></div>
+   </div>
+   <p class="small" style="margin:8px 0 0"><b>Erwartung:</b> ${dm.grade[2]}. Der Nachfrage-Fit fließt mit bis zu ±6 Punkten in die Gesamtbewertung ein.</p>
+   <h3>Wie gut passt das Objekt?</h3>${demPartsHTML(dm)}
+   <h3>Was im ${b}. ${DATA[b].name} gefragt ist</h3>
+   ${demBarsSVG(dd,dm.cls)}
+   <div class="refbox">Haushalte: <b>${fmt(d.hh[0]*100)} %</b> 1 Person · <b>${fmt(d.hh[1]*100)} %</b> 2 Personen · <b>${fmt((d.hh[2]+d.hh[3])*100)} %</b> 3+ Personen (${fmt(d.nHH)} Haushalte).
+    Bewohner in Wohnungseigentum <b>${fmt(d.eig*100)} %</b> · beengt wohnend (&lt; 15 m²/Person) <b>${fmt(d.eng*100)} %</b> · Kinder 5–19 J. <b>${fmt(d.kids*100)} %</b> · 25–44-Jährige <b>${fmt(d.a2544*100)} %</b> · Bevölkerung 2025–2035 <b>${d.grow>=0?'+':''}${fmt(d.grow*100,1)} %</b>.</div>
+   <h3>Tipps für mehr Nachfrage</h3><ul class="flags">${dm.tips.map(t=>`<li><span class="pill info">Tipp</span><span>${t}</span></li>`).join("")}</ul>
+   <h3>Wo ist ${DEM_CL[dm.cls][0]} (${DEM_CL[dm.cls][1]}) besonders gefragt?</h3>
+   <p class="small muted" style="margin:0 0 6px">Karte und Tabelle zeigen für deine Wohnungsgröße das Verhältnis von Nachfrage zu Bestand je Bezirk. Ein Klick wählt den Bezirk.</p>
+   <div id="demMap" style="max-width:560px">${demMapSVG(dm.cls,b)}</div>
+   <div style="margin-top:10px;overflow-x:auto;-webkit-overflow-scrolling:touch">${demTableHTML(dm.cls,b,true)}</div>
+   <p class="small muted" style="margin-top:8px"><b>So wird gerechnet (Modell):</b> Jedem Haushaltstyp wird eine typische Wunschgröße zugeordnet (z. B. Singles überwiegend bis 60 m², Familien 60–130 m²). Daraus ergibt sich die Nachfrage je Größenklasse, verglichen mit dem tatsächlichen Wohnungsbestand im Bezirk. Werte über 1 bedeuten: mehr passende Haushalte als Wohnungen dieser Größe. Quellen: Stadt Wien – Registerzählung 2023 (Wohnungen und Bevölkerung nach Zählbezirken), Bevölkerungsprognose 2023–2043 (MA 23). Suchanfragen auf Immobilienportalen sind nicht enthalten. Der Bestand umfasst auch Einfamilienhäuser – in den Außenbezirken (z. B. 13., 19., 21.–23.) wirken große Einheiten dadurch reichlicher vorhanden, als es bei Eigentumswohnungen der Fall ist.</p>`;
+  $("#demOut").onclick=e=>{ const t=e.target.closest("[data-b]"); if(!t) return; S.bezirk=t.dataset.b; syncInputs(); update(); };
+}
+
 function rentCalc(st, r){
   r=r||calc(st); const A=+st.flaeche, bz=st.bezirk, ask=RENT_ASK[bz]; const askB=(ask[0]+ask[1])/2;
   const bkN=(+st.bk||0)/1.1;
@@ -1144,8 +1262,17 @@ function reportHTML(){
     <li><span class="pill info">TO-DO</span><span>Grundbuchauszug, WE-Vertrag, Nutzwertgutachten, Protokolle der Eigentümerversammlungen, Rücklage &amp; Vorausschau anfordern.</span></li>
     <li><span class="pill info">TO-DO</span><span>Bauakt MA 37 (Konsens) einsehen; mindestens 2 Baumeister-Angebote; Kaufanbot mit Finanzierungsvorbehalt.</span></li></ul>
    ${foot}</div>`;
+  const dm=ev.dm, dd=dm.dd;
+  const pD=`<div class="rp-page">${head(5)}<h2>Nachfrage im Bezirk</h2>
+   <div class="rp-grid4">${kpi("Nachfrage-Fit",`<span class="pill ${dm.grade[0]}" style="font-size:11px">${dm.fit} / 100 · ${dm.grade[1]}</span>`)}${kpi("Zielgruppe",dd.grp)}${kpi("Knappste Größen",dd.top.map(x=>DEM_CL[x][0]).join(", "))}${kpi("Nachfrage/Angebot "+DEM_CL[dm.cls][0],fmt(dd.P[dm.cls],2),dd.P[dm.cls]>=1.1?'pos':dd.P[dm.cls]<0.85?'neg':'')}</div>
+   <div class="small" style="margin-top:4px"><b>Erwartung:</b> ${dm.grade[2]}.</div>
+   <div class="rp-grid2" style="margin-top:6px;align-items:start"><div><h3>Bewertung des Objekts</h3>${demPartsHTML(dm)}</div><div><h3>Nachfrage vs. Bestand im ${S.bezirk}. Bezirk</h3>${demBarsSVG(dd,dm.cls)}</div></div>
+   <h3>Tipps</h3><ul class="flags">${dm.tips.slice(-3).map(t=>`<li><span class="pill info">TIPP</span><span>${t}</span></li>`).join("")}</ul>
+   <h3>${DEM_CL[dm.cls][0]} in allen Bezirken</h3>${demTableHTML(dm.cls,S.bezirk,false)}
+   <div class="small muted" style="margin-top:4px">Modell: Haushaltsstruktur → typische Wunschgröße, verglichen mit dem Wohnungsbestand. Quellen: Stadt Wien Registerzählung 2023, Bevölkerungsprognose 2023–2043 (MA 23). Bestand inkl. Einfamilienhäuser; keine Portal-Suchdaten.</div>
+   ${foot}</div>`;
   const rc=rentCalc(S,r);
-  const p5=`<div class="rp-page">${head(5)}<h2>Vermietung nach Sanierung</h2>
+  const p5=`<div class="rp-page">${head(6)}<h2>Vermietung nach Sanierung</h2>
    <div class="rp-grid4">${kpi("Vermietbarkeit",`<span class="pill ${rc.grade[0]}" style="font-size:11px">${rc.grade[1]}</span>`)}${kpi("Nettomiete realistisch",eur(rc.rows[1].miete)+"/Mo.")}${kpi("Bruttorendite realistisch",pct(rc.rows[1].brutto))}${kpi("Cashflow / Monat",(rc.rows[1].cf>=0?'+':'')+eur(rc.rows[1].cf),rc.rows[1].cf>=0?'pos':'neg')}</div>
    <h3>Miete je Szenario (Hauptmietzins netto)</h3>${rentBarsSVG(rc.rows)}
    <h3>Rendite &amp; Cashflow</h3>${rentTable(rc,"n")}
@@ -1153,7 +1280,7 @@ function reportHTML(){
    <h3>Mietrechtliche Einordnung</h3><div class="box small">${rentNotes(rc)}</div>
    <div class="small muted" style="margin-top:6px">Quellen: Richtwert Wien ${fmt(RICHTWERT,2)} €/m² ab 1.4.2026 (Statistik Austria, Valorisierung § 5 RichtWG); Angebotsmieten je Bezirk: Medianwerte mietdaten.at und rentradar.rentals (Nov. 2026). Angebotsmieten liegen meist über den tatsächlichen Vertragsmieten.</div>
    ${foot}</div>`;
-  return `<div class="rp">${p1}${p2}${p3}${p4}${p5}</div>`;
+  return `<div class="rp">${p1}${p2}${p3}${p4}${pD}${p5}</div>`;
 }
 function paginate(root){
   const isBody=c=>!["rp-foot","rp-head","rp-cover"].some(k=>c.classList.contains(k)) && c.tagName!=="H2";
