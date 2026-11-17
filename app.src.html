@@ -109,6 +109,31 @@ svg text{font-family:inherit}
 #exportModal .bar b{margin-right:auto}
 #exportBody{padding:20px 0}
 body.modal-open{overflow:hidden}
+#dash{display:none;position:fixed;inset:0;background:var(--bg);z-index:45;overflow:auto;-webkit-overflow-scrolling:touch}
+#dash.open{display:block}
+#dash .bar{height:auto;overflow:visible;border-radius:0;margin:0;position:sticky;top:0;z-index:2;background:#1d2330;color:#fff;display:flex;gap:10px;align-items:center;padding:calc(10px + env(safe-area-inset-top)) 20px 10px}
+#dash .bar b{margin-right:auto;font-size:16px}
+#dash .bar button{background:#2b3345;border-color:#3a4358;color:#fff}
+#dash .bar button.pri{background:#c8102e;border-color:#c8102e}
+#dashBody{max-width:1280px;margin:0 auto;padding:18px 20px 40px}
+.dsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.dfil{display:grid;grid-template-columns:2fr repeat(5,1fr);gap:8px;margin-bottom:8px}
+.dfil input,.dfil select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;min-width:0;width:100%}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.dcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;border-left:5px solid #9aa3b5}
+.dcard.ok{border-left-color:#1f8a4c}.dcard.warn{border-left-color:#d99a00}.dcard.bad{border-left-color:#c8102e}
+.dcard h3{margin:0;font-size:15px;line-height:1.3;text-transform:none;letter-spacing:0;color:inherit}
+.dcard .meta{font-size:12px;color:#6b7385}
+.dcard .top{display:flex;gap:10px;align-items:flex-start}
+.dcard .sc{flex:none;text-align:center;border-radius:10px;padding:6px 8px;min-width:54px;font-weight:800;font-size:20px;line-height:1;background:#eef0f4}
+.dcard.ok .sc{background:#e5f4ec;color:#1f8a4c}.dcard.warn .sc{background:#fff4d6;color:#9a6b00}.dcard.bad .sc{background:#fde8eb;color:#c8102e}
+.dcard .sc small{display:block;font-size:9px;font-weight:600;margin-top:3px}
+.dfacts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 10px;font-size:12px}
+.dfacts div span{display:block;color:#6b7385;font-size:10.5px}.dfacts div b{font-variant-numeric:tabular-nums}
+.dcard .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}.dcard .acts button{flex:1 1 auto;padding:7px 8px;font-size:12.5px}
+.dcard .acts select{font:inherit;font-size:12.5px;padding:6px;border:1px solid var(--line);border-radius:8px;flex:1 1 100%}
+.dempty{text-align:center;padding:50px 20px;color:#6b7385;background:#fff;border:1px dashed var(--line);border-radius:14px}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1d2330;color:#fff;padding:10px 16px;border-radius:10px;z-index:60;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .brandbox{display:flex;align-items:center;gap:12px}.brandbox .logo{flex:0 0 auto;border-radius:9px;box-shadow:0 0 0 1px #3a4358}
 #mobScore{display:none}
 @media(max-width:1050px){main{grid-template-columns:minmax(0,1fr)}}
@@ -118,7 +143,9 @@ body.modal-open{overflow:hidden}
  header h1{font-size:19px}header .sub{display:none}
  .brandbox .logo{width:34px;height:34px}
  header .actions{margin-left:0;width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
- header .actions select{grid-column:1/-1;min-height:40px}header .actions #btnPrint{grid-column:1/-1}
+ header .actions #btnPrint{grid-column:1/-1}
+ #dash .bar{flex-wrap:wrap;padding:calc(8px + env(safe-area-inset-top)) 10px 8px}#dash .bar b{width:100%}#dash .bar button{flex:1 1 auto}
+ #dashBody{padding:12px 10px calc(20px + env(safe-area-inset-bottom))}.dfil{grid-template-columns:1fr 1fr}.dfil .q,#dfSort{grid-column:1/-1}.dsum{grid-template-columns:1fr 1fr}.dsum .kpi:last-child{grid-column:1/-1}.dgrid{grid-template-columns:1fr}
  button,.btn{min-height:42px;touch-action:manipulation}
  main{padding:0 10px calc(78px + env(safe-area-inset-bottom));gap:12px}
  nav.tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:0;z-index:20;background:var(--bg);margin:0 -10px 10px;padding:10px;box-shadow:0 1px 0 var(--line)}
@@ -162,10 +189,9 @@ body.modal-open{overflow:hidden}
     <div class="sub">Kauf → Sanierung → Verkauf · kalibriert auf die 23 Wiener Bezirke (Statistik Austria, Transaktionsdaten 2021–2025)</div>
   </div></div>
   <div class="actions">
-    <select id="savedSel" title="Gespeicherte Objekte" style="font:inherit;padding:7px;border-radius:8px;background:#2b3345;color:#fff;border:1px solid #3a4358"></select>
+    <button id="btnDash">Meine Objekte</button>
     <button id="btnSave">Speichern</button>
     <button id="btnNew">Neues Objekt</button>
-    <button id="btnDel">Löschen</button>
     <button id="btnPrint" class="pri" style="background:#c8102e;border-color:#c8102e">Bericht exportieren</button>
   </div>
 </header>
@@ -378,6 +404,7 @@ body.modal-open{overflow:hidden}
 
 <aside id="side"></aside>
 </main>
+<div id="dash"><div class="bar"><b>Meine Objekte</b><button class="pri" id="dashNew">+ Neues Objekt</button><button id="dashClose">Zum Rechner</button></div><div id="dashBody"></div></div>
 <div id="exportModal"><div class="bar"><b>Bericht-Vorschau (A4)</b><button class="pri" id="btnPdf">Als PDF speichern / drucken</button><button id="btnHtml">Als HTML herunterladen</button><button id="btnClose">Schließen</button></div><div id="exportBody"></div></div>
 
 <script>
@@ -1327,17 +1354,86 @@ function downloadHTML(){
 /* ---------- Speichern ---------- */
 const LS="wienFlip.objects";
 function loadAll(){ try{return JSON.parse(localStorage.getItem(LS))||{};}catch{return {};} }
-function refreshSaved(sel){ const all=loadAll(); const s=$("#savedSel"); s.innerHTML=`<option value="">— Gespeicherte Objekte (${Object.keys(all).length}) —</option>`+Object.keys(all).map(k=>`<option ${k===sel?'selected':''}>${k}</option>`).join(""); }
-$("#btnSave").onclick=()=>{ const n=S.name||prompt("Name für dieses Objekt:","Objekt "+new Date().toLocaleDateString("de-AT")); if(!n) return; S.name=n; const all=loadAll(); all[n]=S; localStorage.setItem(LS,JSON.stringify(all)); syncInputs(); refreshSaved(n); };
-$("#btnNew").onclick=()=>{ S=JSON.parse(JSON.stringify(DEFAULTS)); syncInputs(); update(); refreshSaved(); go(0); };
-$("#btnDel").onclick=()=>{ const k=$("#savedSel").value; if(!k) return; if(!confirm(`„${k}“ löschen?`)) return; const all=loadAll(); delete all[k]; localStorage.setItem(LS,JSON.stringify(all)); refreshSaved(); };
-$("#savedSel").onchange=e=>{ const all=loadAll(); const o=all[e.target.value]; if(!o) return; S={...JSON.parse(JSON.stringify(DEFAULTS)),...o,comps:{...DEFAULTS.comps,...o.comps},checks:{...o.checks}}; syncInputs(); update(); };
+const STATUS=["Idee","Besichtigt","Angebot gelegt","Gekauft","In Sanierung","Verkauft","Abgesagt"];
+const norm=o=>({...JSON.parse(JSON.stringify(DEFAULTS)),...o,comps:{...DEFAULTS.comps,...o.comps},checks:{...o.checks}});
+const saveAll=all=>localStorage.setItem(LS,JSON.stringify(all));
+let curKey=null, DF={q:"",bez:"",urt:"",st:"",min:"",sort:"ts"};
+function toast(t){ const d=document.createElement("div"); d.className="toast"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
+function refreshSaved(){ $("#btnDash").textContent=`Meine Objekte (${Object.keys(loadAll()).length})`; }
+function loadObj(k){ const o=loadAll()[k]; if(!o) return; S=norm(o); delete S._ts; delete S.status; curKey=k; syncInputs(); update(); go(0); closeDash(); }
+$("#btnSave").onclick=()=>{ const n=(S.name||prompt("Name / Adresse für dieses Objekt:","Objekt "+new Date().toLocaleDateString("de-AT"))||"").trim(); if(!n) return; S.name=n; const all=loadAll();
+  const prev=all[curKey]||all[n]; if(curKey&&curKey!==n&&all[curKey]) delete all[curKey];
+  all[n]={...JSON.parse(JSON.stringify(S)),_ts:Date.now(),status:prev?.status||"Idee"}; saveAll(all); curKey=n; syncInputs(); refreshSaved(); toast(`„${n}“ gespeichert`); };
+$("#btnNew").onclick=()=>{ S=JSON.parse(JSON.stringify(DEFAULTS)); curKey=null; syncInputs(); update(); refreshSaved(); go(0); };
+function dashRows(){
+  const all=loadAll();
+  return Object.entries(all).map(([k,o])=>{ const st=norm(o), ev=evaluate(st), r=ev.r; let rent=null; try{ rent=rentCalc(st,r).rows[1]; }catch(e){}
+    return {k,o,st,ev,r,rent,ts:o._ts||0,status:o.status||"Idee"}; });
+}
+function dashCard(x){
+  const {k,st,ev,r,rent}=x, A=+st.flaeche, d=DATA[st.bezirk];
+  const f=(l,v,c="")=>`<div><span>${l}</span><b class="${c}">${v}</b></div>`;
+  return `<div class="dcard ${ev.cls}" data-k="${esc(k)}">
+   <div class="top"><div class="sc">${ev.s}<small>Punkte</small></div><div style="min-width:0"><h3>${esc(k)}</h3>
+    <div class="meta">${st.bezirk}. ${d.name} · ${fmt(A)} m² · ${fmt(+st.zimmer,1)} Zi.${x.ts?` · gespeichert ${new Date(x.ts).toLocaleDateString("de-AT")}`:""}</div>
+    <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap"><span class="pill ${ev.cls}">${ev.txt}</span><span class="pill info">${esc(x.status)}</span></div></div></div>
+   <div class="dfacts">
+    ${f("Kaufpreis",eur(r.KP))}${f("€/m² Kauf",fmt((r.P-r.zub.inKP)/A))}${f("Sanierung",eur(r.sanTotal))}
+    ${f("Verkaufserlös",eur(r.sale))}${f("Gewinn v. St.",eur(r.gewinnVor),r.gewinnVor>=0?"pos":"neg")}${f("Marge",pct(r.marge),r.marge>=+st.zielmarge/100?"pos":r.marge<0?"neg":"")}
+    ${f("Max. Kaufpreis",eur(ev.maxKP))}${f("Nachfrage-Fit",`${ev.dm.fit}/100`)}${f("Miete real.",rent?`${eur(rent.miete)} · ${pct(rent.brutto)}`:"–")}
+   </div>
+   <div class="acts"><select data-act="status">${STATUS.map(s=>`<option ${s===x.status?"selected":""}>${s}</option>`).join("")}</select>
+    <button class="pri" data-act="open">Öffnen</button><button data-act="report">Bericht</button><button data-act="dup">Duplizieren</button><button data-act="del">Löschen</button></div>
+  </div>`;
+}
+function renderDash(){
+  const rows=dashRows();
+  const bez=[...new Set(rows.map(x=>+x.st.bezirk))].sort((a,b)=>a-b);
+  let list=rows.filter(x=>(!DF.q||(x.k+" "+DATA[x.st.bezirk].name).toLowerCase().includes(DF.q.toLowerCase()))
+    &&(!DF.bez||String(x.st.bezirk)===DF.bez)&&(!DF.urt||x.ev.cls===DF.urt)&&(!DF.st||x.status===DF.st)&&(DF.min===""||x.r.marge*100>=+DF.min));
+  const srt={ts:(a,b)=>b.ts-a.ts,score:(a,b)=>b.ev.s-a.ev.s,marge:(a,b)=>b.r.marge-a.r.marge,gewinn:(a,b)=>b.r.gewinnVor-a.r.gewinnVor,kp:(a,b)=>a.r.KP-b.r.KP,bez:(a,b)=>a.st.bezirk-b.st.bezirk,fit:(a,b)=>b.ev.dm.fit-a.ev.dm.fit,name:(a,b)=>a.k.localeCompare(b.k,"de")}[DF.sort];
+  list.sort(srt);
+  const n=list.length, good=list.filter(x=>x.ev.cls==="ok").length;
+  const avg=n?list.reduce((a,x)=>a+x.r.marge,0)/n:0, sumG=list.reduce((a,x)=>a+x.r.gewinnVor,0), sumKP=list.reduce((a,x)=>a+x.r.KP,0);
+  const opt=(v,l,cur)=>`<option value="${v}" ${String(cur)===String(v)?"selected":""}>${l}</option>`;
+  $("#dashBody").innerHTML= !rows.length ? `<div class="dempty"><b>Noch keine Objekte gespeichert.</b><br>Gib ein Objekt im Rechner ein und tippe auf „Speichern“. Es erscheint dann hier.</div>` : `
+   <div class="dsum">
+    <div class="kpi"><div class="k">Objekte${n<rows.length?" (gefiltert)":""}</div><div class="v">${n}${n<rows.length?` <small class="muted">von ${rows.length}</small>`:""}</div></div>
+    <div class="kpi"><div class="k">„Kauf lohnt sich“</div><div class="v pos">${good}</div></div>
+    <div class="kpi"><div class="k">Ø Marge</div><div class="v">${pct(avg)}</div></div>
+    <div class="kpi"><div class="k">Summe Kaufpreise</div><div class="v">${eur(sumKP)}</div></div>
+    <div class="kpi"><div class="k">Summe Gewinn v. St.</div><div class="v ${sumG>=0?"pos":"neg"}">${eur(sumG)}</div></div>
+   </div>
+   <div class="dfil">
+    <input class="q" id="dfQ" type="search" placeholder="Suche nach Adresse oder Bezirk …" value="${esc(DF.q)}">
+    <select id="dfBez">${opt("","Alle Bezirke",DF.bez)}${bez.map(b=>opt(b,`${b}. ${DATA[b].name}`,DF.bez)).join("")}</select>
+    <select id="dfUrt">${opt("","Alle Urteile",DF.urt)}${opt("ok","Kauf lohnt sich",DF.urt)}${opt("warn","Grenzwertig",DF.urt)}${opt("bad","Lohnt sich nicht",DF.urt)}</select>
+    <select id="dfSt">${opt("","Alle Status",DF.st)}${STATUS.map(x=>opt(x,x,DF.st)).join("")}</select>
+    <select id="dfMin">${opt("","Marge: alle",DF.min)}${[0,10,15,20,25].map(v=>opt(v,`Marge ≥ ${v} %`,DF.min)).join("")}</select>
+    <select id="dfSort">${opt("ts","Zuletzt gespeichert",DF.sort)}${opt("score","Punkte",DF.sort)}${opt("marge","Marge",DF.sort)}${opt("gewinn","Gewinn",DF.sort)}${opt("fit","Nachfrage-Fit",DF.sort)}${opt("kp","Kaufpreis (niedrig zuerst)",DF.sort)}${opt("bez","Bezirk",DF.sort)}${opt("name","Name A–Z",DF.sort)}</select>
+   </div>
+   ${(DF.q||DF.bez||DF.urt||DF.st||DF.min!=="")?`<div class="small" style="margin:0 0 10px"><a href="#" id="dfReset">Filter zurücksetzen</a></div>`:`<div style="height:6px"></div>`}
+   ${n?`<div class="dgrid">${list.map(dashCard).join("")}</div>`:`<div class="dempty">Kein Objekt passt zu diesen Filtern.</div>`}`;
+  const bind=(id,key,ev="change")=>{ const el=$("#"+id); if(el) el.addEventListener(ev,()=>{ DF[key]=el.value; renderDash(); if(id==="dfQ"){ const q=$("#dfQ"); q.focus(); q.setSelectionRange(q.value.length,q.value.length);} }); };
+  bind("dfQ","q","input"); bind("dfBez","bez"); bind("dfUrt","urt"); bind("dfSt","st"); bind("dfMin","min"); bind("dfSort","sort");
+  const rs=$("#dfReset"); if(rs) rs.onclick=e=>{ e.preventDefault(); DF={...DF,q:"",bez:"",urt:"",st:"",min:""}; renderDash(); };
+}
+$("#dashBody").addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(!b||b.tagName==="SELECT") return; const k=b.closest(".dcard").dataset.k, all=loadAll();
+  if(b.dataset.act==="open") loadObj(k);
+  else if(b.dataset.act==="report"){ loadObj(k); openExport(); }
+  else if(b.dataset.act==="dup"){ let n=k+" (Kopie)", i=2; while(all[n]) n=`${k} (Kopie ${i++})`; all[n]={...all[k],name:n,_ts:Date.now()}; saveAll(all); refreshSaved(); renderDash(); toast(`„${n}“ angelegt`); }
+  else if(b.dataset.act==="del"){ if(!confirm(`„${k}“ löschen?`)) return; delete all[k]; if(curKey===k) curKey=null; saveAll(all); refreshSaved(); renderDash(); }
+});
+$("#dashBody").addEventListener("change",e=>{ const sel=e.target.closest('[data-act="status"]'); if(!sel) return; const k=sel.closest(".dcard").dataset.k, all=loadAll(); if(!all[k]) return; all[k].status=sel.value; saveAll(all); renderDash(); });
+function openDash(){ renderDash(); $("#dash").classList.add("open"); document.body.classList.add("modal-open"); $("#dash").scrollTop=0; }
+function closeDash(){ $("#dash").classList.remove("open"); if(!$("#exportModal").classList.contains("open")) document.body.classList.remove("modal-open"); }
+$("#btnDash").onclick=openDash; $("#dashClose").onclick=closeDash; $("#dashNew").onclick=()=>{ $("#btnNew").onclick(); closeDash(); };
 $("#btnPrint").onclick=openExport;
 $("#btnPdf").onclick=()=>{ document.title=fileBase(); window.print(); }; $("#btnHtml").onclick=downloadHTML; $("#btnClose").onclick=closeExport;
 let printedFromApp=false;
 window.addEventListener("beforeprint",()=>{ if(!$("#exportModal").classList.contains("open")){ printedFromApp=true; $("#exportBody").innerHTML=reportHTML(); $("#exportModal").classList.add("open"); paginate($("#exportBody")); } });
 window.addEventListener("afterprint",()=>{ if(printedFromApp){ printedFromApp=false; closeExport(); } });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeExport(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if($("#exportModal").classList.contains("open")) closeExport(); else closeDash(); } });
 
 document.head.insertAdjacentHTML("beforeend",`<style>${REPORT_CSS}</style>`);
 if("serviceWorker" in navigator && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(()=>{});
