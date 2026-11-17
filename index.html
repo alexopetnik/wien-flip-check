@@ -132,6 +132,13 @@ body.modal-open{overflow:hidden}
 .dfacts div span{display:block;color:#6b7385;font-size:10.5px}.dfacts div b{font-variant-numeric:tabular-nums}
 .dcard .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}.dcard .acts button{flex:1 1 auto;padding:7px 8px;font-size:12.5px}
 .dcard .acts select{font:inherit;font-size:12.5px;padding:6px;border:1px solid var(--line);border-radius:8px;flex:1 1 100%}
+#syncBox{display:none;max-width:1280px;margin:14px auto 0;padding:0 20px}#syncBox.open{display:block}
+.sbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;font-size:14px}
+.sbox ol{margin:6px 0 10px 18px;padding:0;font-size:13.5px;line-height:1.55}
+.sbox .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sbox input[type=password]{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;flex:1 1 240px;min-width:0}
+.sdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#9aa3b5;margin-right:6px;vertical-align:1px}
+.sdot.ok{background:#2ecc71}.sdot.err{background:#ff5a5f}.sdot.run{background:#f5b700}
 .dempty{text-align:center;padding:50px 20px;color:#6b7385;background:#fff;border:1px dashed var(--line);border-radius:14px}
 .toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1d2330;color:#fff;padding:10px 16px;border-radius:10px;z-index:60;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .brandbox{display:flex;align-items:center;gap:12px}.brandbox .logo{flex:0 0 auto;border-radius:9px;box-shadow:0 0 0 1px #3a4358}
@@ -145,7 +152,7 @@ body.modal-open{overflow:hidden}
  header .actions{margin-left:0;width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
  header .actions #btnPrint{grid-column:1/-1}
  #dash .bar{flex-wrap:wrap;padding:calc(8px + env(safe-area-inset-top)) 10px 8px}#dash .bar b{width:100%}#dash .bar button{flex:1 1 auto}
- #dashBody{padding:12px 10px calc(20px + env(safe-area-inset-bottom))}.dfil{grid-template-columns:1fr 1fr}.dfil .q,#dfSort{grid-column:1/-1}.dsum{grid-template-columns:1fr 1fr}.dsum .kpi:last-child{grid-column:1/-1}.dgrid{grid-template-columns:1fr}
+ #syncBox{padding:0 10px;margin-top:10px}#dashBody{padding:12px 10px calc(20px + env(safe-area-inset-bottom))}.dfil{grid-template-columns:1fr 1fr}.dfil .q,#dfSort{grid-column:1/-1}.dsum{grid-template-columns:1fr 1fr}.dsum .kpi:last-child{grid-column:1/-1}.dgrid{grid-template-columns:1fr}
  button,.btn{min-height:42px;touch-action:manipulation}
  main{padding:0 10px calc(78px + env(safe-area-inset-bottom));gap:12px}
  nav.tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:0;z-index:20;background:var(--bg);margin:0 -10px 10px;padding:10px;box-shadow:0 1px 0 var(--line)}
@@ -404,7 +411,7 @@ body.modal-open{overflow:hidden}
 
 <aside id="side"></aside>
 </main>
-<div id="dash"><div class="bar"><b>Meine Objekte</b><button class="pri" id="dashNew">+ Neues Objekt</button><button id="dashClose">Zum Rechner</button></div><div id="dashBody"></div></div>
+<div id="dash"><div class="bar"><b>Meine Objekte</b><button id="btnSync"><span class="sdot"></span>Sync</button><button class="pri" id="dashNew">+ Neues Objekt</button><button id="dashClose">Zum Rechner</button></div><div id="syncBox"><div class="sbox" id="syncCard"></div></div><div id="dashBody"></div></div>
 <div id="exportModal"><div class="bar"><b>Bericht-Vorschau (A4)</b><button class="pri" id="btnPdf">Als PDF speichern / drucken</button><button id="btnHtml">Als HTML herunterladen</button><button id="btnClose">Schließen</button></div><div id="exportBody"></div></div>
 
 <script>
@@ -1356,13 +1363,96 @@ const LS="wienFlip.objects";
 function loadAll(){ try{return JSON.parse(localStorage.getItem(LS))||{};}catch{return {};} }
 const STATUS=["Idee","Besichtigt","Angebot gelegt","Gekauft","In Sanierung","Verkauft","Abgesagt"];
 const norm=o=>({...JSON.parse(JSON.stringify(DEFAULTS)),...o,comps:{...DEFAULTS.comps,...o.comps},checks:{...o.checks}});
-const saveAll=all=>localStorage.setItem(LS,JSON.stringify(all));
+const saveAll=all=>{ localStorage.setItem(LS,JSON.stringify(all)); schedulePush(); };
+const LSS="wienFlip.sync", LSD="wienFlip.deleted", GF="wien-flip-check.json";
+const jget=k=>{ try{return JSON.parse(localStorage.getItem(k))||{};}catch{return {};} };
+const syncCfg=()=>jget(LSS), setCfg=c=>localStorage.setItem(LSS,JSON.stringify(c)), loadDel=()=>jget(LSD);
+function markDel(k){ const d=loadDel(); d[k]=Date.now(); localStorage.setItem(LSD,JSON.stringify(d)); }
+function mergeData(a,b){
+  const old=Date.now()-365*864e5, del={}, obj={};
+  for(const src of [a.deleted,b.deleted]) for(const [k,t] of Object.entries(src||{})) if(t>old) del[k]=Math.max(del[k]||0,t);
+  for(const src of [a.objects,b.objects]) for(const [k,o] of Object.entries(src||{})) if(o&&typeof o==="object"&&(!obj[k]||(o._ts||0)>(obj[k]._ts||0))) obj[k]=o;
+  for(const k of Object.keys(obj)) if(del[k]&&del[k]>=(obj[k]._ts||0)) delete obj[k];
+  return {objects:obj,deleted:del};
+}
+async function gh(path,opt={},tok){
+  const r=await fetch("https://api.github.com"+path,{...opt,cache:"no-store",headers:{Accept:"application/vnd.github+json",Authorization:"Bearer "+(tok||syncCfg().token),...(opt.body?{"Content-Type":"application/json"}:{})}});
+  if(!r.ok){ const e=new Error("GitHub "+r.status); e.status=r.status; throw e; }
+  return r.json();
+}
+async function findGist(){
+  for(let p=1;p<=10;p++){ const l=await gh(`/gists?per_page=100&page=${p}`); const g=l.find(g=>g.files&&g.files[GF]); if(g) return g.id; if(l.length<100) break; }
+  return (await gh("/gists",{method:"POST",body:JSON.stringify({description:"Wien Flip-Check – Sync (bitte nicht löschen)",public:false,files:{[GF]:{content:JSON.stringify({v:1,objects:{},deleted:{}})}}})})).id;
+}
+let syncBusy=false, syncAgain=false, pushT=null, syncState="";
+function schedulePush(){ if(!syncCfg().token) return; clearTimeout(pushT); pushT=setTimeout(()=>{ pushT=null; syncNow(); },1200); }
+function setSync(st,msg){ syncState=st; const d=$("#btnSync .sdot"); if(d) d.className="sdot "+({ok:"ok",run:"run",err:"err",auth:"err",offline:"err"}[st]||"");
+  if($("#syncBox").classList.contains("open")&&syncCfg().token) renderSync(msg); }
+async function syncNow(manual){
+  const c=syncCfg(); if(!c.token) return;
+  if(!navigator.onLine){ setSync("offline","Offline – wird abgeglichen, sobald du wieder Internet hast."); return; }
+  if(syncBusy){ syncAgain=true; return; }
+  syncBusy=true; setSync("run");
+  try{
+    if(!c.gist){ c.gist=await findGist(); setCfg(c); }
+    const g=await gh("/gists/"+c.gist), f=g.files&&g.files[GF];
+    let txt=f?f.content:""; if(f&&f.truncated) txt=await (await fetch(f.raw_url,{cache:"no-store"})).text();
+    let remote={objects:{},deleted:{}}; try{ const j=JSON.parse(txt); remote={objects:j.objects||{},deleted:j.deleted||{}}; }catch{}
+    const before=localStorage.getItem(LS)||"{}";
+    const m=mergeData({objects:loadAll(),deleted:loadDel()},remote);
+    localStorage.setItem(LS,JSON.stringify(m.objects)); localStorage.setItem(LSD,JSON.stringify(m.deleted));
+    const out=JSON.stringify({v:1,objects:m.objects,deleted:m.deleted});
+    if(out!==JSON.stringify({v:1,objects:remote.objects,deleted:remote.deleted})) await gh("/gists/"+c.gist,{method:"PATCH",body:JSON.stringify({files:{[GF]:{content:out}}})});
+    const c2=syncCfg(); if(c2.token){ c2.gist=c.gist; c2.last=Date.now(); setCfg(c2); }
+    refreshSaved();
+    if(before!==JSON.stringify(m.objects)&&$("#dash").classList.contains("open")&&document.activeElement?.id!=="dfQ") renderDash();
+    setSync("ok"); if(manual) toast("Synchronisiert");
+  }catch(e){
+    if(e.status===404&&c.gist){ const c2=syncCfg(); delete c2.gist; setCfg(c2); }
+    const auth=e.status===401||e.status===403;
+    setSync(auth?"auth":"err",auth?"Schlüssel ungültig, abgelaufen oder ohne Recht „gist“ – bitte trennen und neu verbinden.":"Sync fehlgeschlagen ("+(e.status||"keine Verbindung")+"). Wird beim nächsten Öffnen erneut versucht.");
+    if(manual) toast(auth?"Schlüssel ungültig":"Sync fehlgeschlagen");
+  }finally{ syncBusy=false; if(syncAgain){ syncAgain=false; syncNow(); } }
+}
+function renderSync(msg){
+  const c=syncCfg(), el=$("#syncCard");
+  const backup=`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)"><b>Datei-Backup</b>
+   <div class="small muted" style="margin:3px 0 8px">Alle Objekte als Datei sichern oder eine Backup-Datei übernehmen. Beim Import wird zusammengeführt: Es geht nichts verloren, bei gleichem Namen gewinnt die neuere Fassung.</div>
+   <div class="row"><button id="bkOut">Backup herunterladen</button><button id="bkIn">Backup importieren</button><input type="file" id="bkFile" accept=".json,application/json" hidden></div></div>`;
+  el.innerHTML=c.token?`<b><span class="sdot ${$("#btnSync .sdot").className.replace("sdot","")}"></span>Sync aktiv</b>
+   <div class="small" style="margin:4px 0 10px">GitHub-Konto <b>${esc(c.login||"")}</b>${c.last?` · zuletzt abgeglichen ${new Date(c.last).toLocaleString("de-AT",{dateStyle:"short",timeStyle:"short"})}`:""}${msg?`<br><span class="neg">${esc(msg)}</span>`:""}</div>
+   <div class="row"><button class="pri" id="syNow">Jetzt synchronisieren</button><button id="syCopy">Schlüssel kopieren</button><button id="syOff">Trennen</button></div>
+   <div class="small muted" style="margin-top:8px">Anderes Gerät verbinden: dort die App öffnen → „Meine Objekte“ → „Sync“ → denselben Schlüssel einfügen. Speichern, Löschen und Statusänderungen werden danach automatisch abgeglichen.</div>${backup}`
+  :`<b>Handy und Computer synchronisieren</b>
+   <div class="small" style="margin:4px 0 6px">Deine Objekte werden in einem geheimen Gist (einer privaten Ablage) in deinem GitHub-Konto gespeichert. Jedes Gerät mit demselben Schlüssel sieht dieselben Objekte.</div>
+   <ol><li><a href="https://github.com/settings/tokens/new?scopes=gist&description=Wien%20Flip-Check%20Sync" target="_blank" rel="noopener">Schlüssel bei GitHub erstellen</a> (dort einloggen)</li>
+   <li>Bei „Expiration“ <b>No expiration</b> wählen. Nur der Haken bei <b>gist</b> ist gesetzt. Ganz unten auf <b>Generate token</b> tippen.</li>
+   <li>Den Code (beginnt mit <code>ghp_</code>) kopieren und hier einfügen. Am anderen Gerät denselben Code eingeben.</li></ol>
+   <div class="row"><input type="password" id="syTok" placeholder="ghp_…" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="pri" id="syOn">Verbinden</button></div>
+   <div class="small" id="syMsg" style="margin-top:6px">${msg?esc(msg):""}</div>${backup}`;
+  const on=(id,fn)=>{ const b=$("#"+id); if(b) b.onclick=fn; };
+  on("syNow",()=>syncNow(true));
+  on("syCopy",async()=>{ try{ await navigator.clipboard.writeText(c.token); toast("Schlüssel kopiert"); }catch{ prompt("Schlüssel kopieren:",c.token); } });
+  on("syOff",()=>{ if(!confirm("Sync auf diesem Gerät trennen? Die Objekte bleiben auf diesem Gerät gespeichert.")) return; localStorage.removeItem(LSS); setSync(""); renderSync(); });
+  on("syOn",async()=>{ const t=$("#syTok").value.trim(); if(!t) return; const m=$("#syMsg"); m.className="small"; m.textContent="Prüfe Schlüssel …";
+    try{ const u=await gh("/user",{},t); setCfg({token:t,login:u.login}); renderSync(); await syncNow(true); }
+    catch(e){ m.className="small neg"; m.textContent=e.status===401?"Der Schlüssel ist ungültig. Bitte prüfen, ob er vollständig kopiert wurde.":"Keine Verbindung zu GitHub ("+(e.status||"offline")+")."; } });
+  on("bkOut",()=>{ const blob=new Blob([JSON.stringify({v:1,app:"wien-flip-check",exported:new Date().toISOString(),objects:loadAll(),deleted:loadDel()},null,1)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`Flip-Check Backup ${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); });
+  on("bkIn",()=>$("#bkFile").click());
+  const fi=$("#bkFile"); if(fi) fi.onchange=async()=>{ const file=fi.files[0]; if(!file) return;
+    try{ const j=JSON.parse(await file.text()); const inc=j.objects?{objects:j.objects,deleted:j.deleted||{}}:{objects:j,deleted:{}};
+      const n0=Object.keys(loadAll()).length, m=mergeData({objects:loadAll(),deleted:loadDel()},{objects:inc.objects,deleted:inc.deleted});
+      localStorage.setItem(LSD,JSON.stringify(m.deleted)); saveAll(m.objects); refreshSaved(); renderDash();
+      toast(`Backup übernommen: ${Object.keys(m.objects).length-n0} neue Objekte`); }
+    catch{ toast("Diese Datei ist kein Flip-Check-Backup"); } fi.value=""; };
+}
 let curKey=null, DF={q:"",bez:"",urt:"",st:"",min:"",sort:"ts"};
-function toast(t){ const d=document.createElement("div"); d.className="toast"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
+function toast(t){ document.querySelectorAll(".toast").forEach(x=>x.remove()); const d=document.createElement("div"); d.className="toast"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
 function refreshSaved(){ $("#btnDash").textContent=`Meine Objekte (${Object.keys(loadAll()).length})`; }
 function loadObj(k){ const o=loadAll()[k]; if(!o) return; S=norm(o); delete S._ts; delete S.status; curKey=k; syncInputs(); update(); go(0); closeDash(); }
 $("#btnSave").onclick=()=>{ const n=(S.name||prompt("Name / Adresse für dieses Objekt:","Objekt "+new Date().toLocaleDateString("de-AT"))||"").trim(); if(!n) return; S.name=n; const all=loadAll();
-  const prev=all[curKey]||all[n]; if(curKey&&curKey!==n&&all[curKey]) delete all[curKey];
+  const prev=all[curKey]||all[n]; if(curKey&&curKey!==n&&all[curKey]){ delete all[curKey]; markDel(curKey); }
   all[n]={...JSON.parse(JSON.stringify(S)),_ts:Date.now(),status:prev?.status||"Idee"}; saveAll(all); curKey=n; syncInputs(); refreshSaved(); toast(`„${n}“ gespeichert`); };
 $("#btnNew").onclick=()=>{ S=JSON.parse(JSON.stringify(DEFAULTS)); curKey=null; syncInputs(); update(); refreshSaved(); go(0); };
 function dashRows(){
@@ -1410,7 +1500,7 @@ function renderDash(){
     <select id="dfUrt">${opt("","Alle Urteile",DF.urt)}${opt("ok","Kauf lohnt sich",DF.urt)}${opt("warn","Grenzwertig",DF.urt)}${opt("bad","Lohnt sich nicht",DF.urt)}</select>
     <select id="dfSt">${opt("","Alle Status",DF.st)}${STATUS.map(x=>opt(x,x,DF.st)).join("")}</select>
     <select id="dfMin">${opt("","Marge: alle",DF.min)}${[0,10,15,20,25].map(v=>opt(v,`Marge ≥ ${v} %`,DF.min)).join("")}</select>
-    <select id="dfSort">${opt("ts","Zuletzt gespeichert",DF.sort)}${opt("score","Punkte",DF.sort)}${opt("marge","Marge",DF.sort)}${opt("gewinn","Gewinn",DF.sort)}${opt("fit","Nachfrage-Fit",DF.sort)}${opt("kp","Kaufpreis (niedrig zuerst)",DF.sort)}${opt("bez","Bezirk",DF.sort)}${opt("name","Name A–Z",DF.sort)}</select>
+    <select id="dfSort">${opt("ts","Zuletzt geändert",DF.sort)}${opt("score","Punkte",DF.sort)}${opt("marge","Marge",DF.sort)}${opt("gewinn","Gewinn",DF.sort)}${opt("fit","Nachfrage-Fit",DF.sort)}${opt("kp","Kaufpreis (niedrig zuerst)",DF.sort)}${opt("bez","Bezirk",DF.sort)}${opt("name","Name A–Z",DF.sort)}</select>
    </div>
    ${(DF.q||DF.bez||DF.urt||DF.st||DF.min!=="")?`<div class="small" style="margin:0 0 10px"><a href="#" id="dfReset">Filter zurücksetzen</a></div>`:`<div style="height:6px"></div>`}
    ${n?`<div class="dgrid">${list.map(dashCard).join("")}</div>`:`<div class="dempty">Kein Objekt passt zu diesen Filtern.</div>`}`;
@@ -1422,12 +1512,16 @@ $("#dashBody").addEventListener("click",e=>{ const b=e.target.closest("[data-act
   if(b.dataset.act==="open") loadObj(k);
   else if(b.dataset.act==="report"){ loadObj(k); openExport(); }
   else if(b.dataset.act==="dup"){ let n=k+" (Kopie)", i=2; while(all[n]) n=`${k} (Kopie ${i++})`; all[n]={...all[k],name:n,_ts:Date.now()}; saveAll(all); refreshSaved(); renderDash(); toast(`„${n}“ angelegt`); }
-  else if(b.dataset.act==="del"){ if(!confirm(`„${k}“ löschen?`)) return; delete all[k]; if(curKey===k) curKey=null; saveAll(all); refreshSaved(); renderDash(); }
+  else if(b.dataset.act==="del"){ if(!confirm(`„${k}“ löschen?`)) return; delete all[k]; markDel(k); if(curKey===k) curKey=null; saveAll(all); refreshSaved(); renderDash(); }
 });
-$("#dashBody").addEventListener("change",e=>{ const sel=e.target.closest('[data-act="status"]'); if(!sel) return; const k=sel.closest(".dcard").dataset.k, all=loadAll(); if(!all[k]) return; all[k].status=sel.value; saveAll(all); renderDash(); });
+$("#dashBody").addEventListener("change",e=>{ const sel=e.target.closest('[data-act="status"]'); if(!sel) return; const k=sel.closest(".dcard").dataset.k, all=loadAll(); if(!all[k]) return; all[k].status=sel.value; all[k]._ts=Date.now(); saveAll(all); renderDash(); });
 function openDash(){ renderDash(); $("#dash").classList.add("open"); document.body.classList.add("modal-open"); $("#dash").scrollTop=0; }
 function closeDash(){ $("#dash").classList.remove("open"); if(!$("#exportModal").classList.contains("open")) document.body.classList.remove("modal-open"); }
-$("#btnDash").onclick=openDash; $("#dashClose").onclick=closeDash; $("#dashNew").onclick=()=>{ $("#btnNew").onclick(); closeDash(); };
+$("#btnDash").onclick=openDash;
+$("#btnSync").onclick=()=>{ const b=$("#syncBox"); b.classList.toggle("open"); if(b.classList.contains("open")) renderSync(); };
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncNow(); else if(pushT){ clearTimeout(pushT); pushT=null; syncNow(); } });
+window.addEventListener("online",()=>syncNow());
+if(syncCfg().token) setTimeout(()=>syncNow(),300); $("#dashClose").onclick=closeDash; $("#dashNew").onclick=()=>{ $("#btnNew").onclick(); closeDash(); };
 $("#btnPrint").onclick=openExport;
 $("#btnPdf").onclick=()=>{ document.title=fileBase(); window.print(); }; $("#btnHtml").onclick=downloadHTML; $("#btnClose").onclick=closeExport;
 let printedFromApp=false;
