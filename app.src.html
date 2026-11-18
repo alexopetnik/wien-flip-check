@@ -375,6 +375,7 @@ body.modal-open{overflow:hidden}
       <p class="hint">Was bringt die Wohnung, wenn du sie nach der Sanierung vermietest statt verkaufst (oder der Verkauf nicht klappt)? Drei Mietszenarien, berechnet mit Wiener Angebotsmieten je Bezirk bzw. dem Richtwert-Mietrecht.</p>
       <div class="grid">
         <label class="f">Mietrecht<select data-k="mietRecht"><option value="auto">automatisch (aus Baujahr/Stockwerk)</option><option value="rw">Richtwert (MRG-Vollanwendung)</option><option value="frei">freier Mietzins</option></select></label>
+        <label class="f">Altbau-Miete ansetzen als<select data-k="altAnsatz"><option value="markt">Marktmiete laut Vergleichsinseraten</option><option value="recht">nur gesetzlich zulässige Richtwertmiete</option></select><small>gilt nur für Richtwert-Altbauten</small></label>
         <label class="f">Mietvertrag<select data-k="befristet"><option value="ja">befristet (3+ Jahre)</option><option value="nein">unbefristet</option></select><small>Richtwert: befristet −25 %</small></label>
         <label class="f">Lagezuschlag<div class="inrow"><input data-k="lagezuschlag" type="number" step="0.1" placeholder="Bezirksvorgabe"><span>€/m²</span></div><small>leer = Bezirksvorgabe</small></label>
         <label class="f">Nicht umlagefähige Kosten<div class="inrow"><input data-k="nonUml" type="number" step="0.1"><span>€/m²/Mo.</span></div><small>Reparaturrücklage, Verwaltung, Instandhaltung</small></label>
@@ -470,7 +471,7 @@ const DEFAULTS = {
   checks:{}, sonderumlage:0,
   ausstattung:"geh", vkOverride:"", mVor:2, mBau:4, mVerk:4, bk:3.6, maklerVerk:3, marketing:3500,
   steuer:"gmbh", grenzsatz:48, zielmarge:20,
-  mietRecht:"auto", befristet:"ja", lagezuschlag:"", nonUml:1.2, tilgJahre:25,
+  mietRecht:"auto", altAnsatz:"markt", befristet:"ja", lagezuschlag:"", nonUml:1.2, tilgJahre:25,
 };
 delete DEFAULTS.comps.reserve; delete DEFAULTS.comps.planung;
 
@@ -982,6 +983,10 @@ function renderDeal(ev){
 /* ---------- Vermietung ---------- */
 // Angebotsmieten brutto €/m² (Median Inserate, Stand Nov. 2026): [mietdaten.at, rentradar.rentals]
 const RENT_ASK = {1:[26.64,26.9],2:[22.55,24.6],3:[23.75,24.0],4:[22.82,23.3],5:[20.51,22.4],6:[22.05,22.9],7:[22.55,22.8],8:[21.15,21.9],9:[21.66,23.7],10:[19.58,19.8],11:[18.75,18.5],12:[20.57,21.4],13:[19.48,22.7],14:[18.82,21.0],15:[20.23,24.0],16:[19.26,21.0],17:[20.64,20.9],18:[21.41,21.9],19:[23.14,22.7],20:[19.75,20.2],21:[19.75,20.0],22:[24.87,25.0],23:[19.00,19.4]};
+// Größenzuschlag €/m² (derStandard-Preisspiegel 2025–26: <50 m² +7 %, 81–129 m² −4,5 %; willhaben sanierte Altbau-Inserate 20–55 m² +7–12 %)
+const SIZE_PTS=[[30,1.12],[40,1.08],[50,1.04],[65,0.99],[90,0.96],[130,0.95]];
+const sizeF=A=>{ const P=SIZE_PTS; if(A<=P[0][0]) return P[0][1]; for(let i=1;i<P.length;i++) if(A<=P[i][0]){ const [a0,f0]=P[i-1],[a1,f1]=P[i]; return f0+(f1-f0)*(A-a0)/(a1-a0); } return P[P.length-1][1]; };
+const SAN_F=1.05; // Erstbezug nach Sanierung vs. Bezirksmedian aller Inserate (willhaben: saniert +10 %, halb angesetzt)
 const RICHTWERT = 6.74; // Wien ab 1.4.2026 (Statistik Austria, § 5 RichtWG)
 // grobe Orientierung für Lagezuschlag €/m² (Lagezuschlagsrechner Stadt Wien; Gründerzeitviertel i. d. R. 0)
 const LZ_DEF = {1:16.0,2:3.3,3:4.2,4:5.3,5:1.4,6:5.3,7:5.3,8:5.3,9:5.3,10:0,11:0,12:0,13:4.2,14:1.4,15:0,16:0,17:1.4,18:4.2,19:4.2,20:0,21:1.4,22:1.4,23:1.4};
@@ -1100,19 +1105,21 @@ function rentCalc(st, r){
   const zu = {std:0.05,geh:0.10,prem:0.15}[st.ausstattung]||0.05;
   const befr = st.befristet!=="nein";
   const lfAdj = 1+r.lfSum*0.6, ausAdj = {std:0.97,geh:1,prem:1.05}[st.ausstattung]||1;
-  const freiNet = Math.max(0, askB/1.1 - bkN);
+  const freiNet = Math.max(0, askB/1.1 - bkN), szf=sizeF(A);
+  const mkt = freiNet*szf*SAN_F*lfAdj*ausAdj*0.95;
+  const mktSc = lbl=>[["Pessimistisch", mkt*0.88, 3, `Vertragsmiete 12 % unter realistisch, längere Suche`],
+        ["Realistisch", mkt, 1.5, `${lbl}: Bezirks-Angebotsmiete × Größe ${fmt(szf,2)} × saniert ${fmt(SAN_F,2)}, −5 % Vertragsabschlag, lage- und ausstattungsbereinigt`],
+        ["Optimistisch", mkt*1.08, 0.5, "Top-Präsentation, hochwertig, rascher Abschluss"]];
+  const legal = (RICHTWERT*(1+zu)+(lzOK?lz:0))*(befr?0.75:1);
+  const market = regime==="rw" && st.altAnsatz!=="recht";
   let sc;
-  if(regime==="rw"){
+  if(market) sc=mktSc("Vergleichsinserate sanierter Altbau");
+  else if(regime==="rw"){
     const f=befr?0.75:1;
     sc=[["Pessimistisch", RICHTWERT*0.75, 3, "Richtwert ohne Zu-/Lagezuschlag, befristet (−25 %)"],
         ["Realistisch", (RICHTWERT*(1+zu)+(lzOK?lz:0))*f, 1.5, `Richtwert + Ausstattung ${fmt(zu*100)} %${lzOK?` + Lagezuschlag ${fmt(lz,2)} €`:" (kein Lagezuschlag)"}${befr?", befristet −25 %":""}`],
         ["Optimistisch", RICHTWERT*(1+zu+0.05)+lz, 0.5, `Richtwert + Zuschläge + voller Lagezuschlag ${fmt(lz,2)} €, unbefristet`]];
-  } else {
-    const real=freiNet*0.95*lfAdj*ausAdj;
-    sc=[["Pessimistisch", real*0.88, 3, "Vertragsmiete 12 % unter realistisch, längere Suche"],
-        ["Realistisch", real, 1.5, "Angebotsmiete Bezirk −5 % (Vertragsabschlag), lage- und ausstattungsbereinigt"],
-        ["Optimistisch", real*1.08, 0.5, "Top-Präsentation, möbliert/hochwertig, rascher Abschluss"]];
-  }
+  } else sc=mktSc("Freier Mietzins");
   const invest = r.KP + r.nkAnsch + r.sanTotal + r.nkPfand + r.nkBank;
   const rate = annuity(r.loan, +st.zins, +st.tilgJahre||25), zinsM = r.loan*(+st.zins/100)/12;
   const nonUml = (+st.nonUml||0)*A;
@@ -1125,7 +1132,8 @@ function rentCalc(st, r){
     return {n,m2,pm,miete,gesamt,jahr,eff,brutto,netto,cf,ekRend,leer,desc,faktor:invest/jahr};
   });
   const real=rows[1]; const grade = real.brutto>=0.05?["ok","gut vermietbar"]: real.brutto>=0.035?["warn","durchschnittlich"]:["bad","schwache Rendite"];
-  return {regime, askB, freiNet, lz, lzOK, befr, invest, rate, zinsM, nonUml, rows, grade, bkN, ask};
+  const over=market?Math.max(0,(rows[1].m2-legal)*A):0;
+  return {regime, market, legal, over, rueck:over*36, szf, mkt, askB, freiNet, lz, lzOK, befr, invest, rate, zinsM, nonUml, rows, grade, bkN, ask};
 }
 function rentBarsSVG(rows){
   const W=680,H=150, mx=Math.max(...rows.map(r=>r.m2))*1.15, cols=["#d05252","#2f6db5","#1a8f4c"]; let s="";
@@ -1151,9 +1159,10 @@ function rentTable(rc, cls=""){
    <tr><td>EK-Rendite p. a. (nach Zinsen, vor Steuer)</td>${td(r=>pct(r.ekRend),r=>g(r.ekRend))}</tr></tbody></table>`;
 }
 function rentNotes(rc){
+  if(rc.market) return `<b>Achtung Mietrecht: Die Marktmiete liegt über dem gesetzlichen Höchstwert.</b> Altbau mit Baubewilligung vor 1945 → MRG-Vollanwendung, erlaubt ist nur der Richtwert ${fmt(RICHTWERT,2)} €/m² + Zuschläge${rc.befr?", befristet −25 %":""}${rc.lzOK?` + Lagezuschlag ${fmt(rc.lz,2)} €`:""} = ca. <b>${fmt(rc.legal,2)} €/m² netto</b>. Die Szenarien rechnen mit dem, was sanierte Altbauwohnungen laut Inseraten tatsächlich verlangen (realistisch ${fmt(rc.rows[1].m2,2)} €/m²). Der Mehrbetrag von ca. <b>${eur(rc.over)}/Monat</b> ist rechtlich angreifbar: Mieter können die Miete überprüfen lassen (Schlichtungsstelle, AK-Altbau-Mietencheck) und zu viel bezahlte Miete in der Regel bis zu 3 Jahre rückwirkend zurückfordern – hier bis ca. <b>${eur(rc.rueck)}</b>. Rechtlich sicher: Einstellung „nur gesetzlich zulässige Richtwertmiete“.`;
   return rc.regime==="rw"
    ? `<b>Mietrecht: MRG-Vollanwendung (Richtwert).</b> Altbau mit Baubewilligung vor 1945 → Hauptmietzins max. Richtwert ${fmt(RICHTWERT,2)} €/m² (ab 1.4.2026) + Zuschläge; befristete Verträge −25 %. Lagezuschlag nur bei überdurchschnittlicher Lage, in Gründerzeitvierteln in der Regel ausgeschlossen, und nur bei schriftlicher Bekanntgabe im Vertrag${rc.lzOK?"":" – bei deiner Mikrolage nicht angesetzt"}. Ausnahme: nach 2001 neu ausgebaute Dachgeschoße fallen nicht unter den Richtwert. Freie Marktmiete im Bezirk wäre netto ca. ${fmt(rc.freiNet,2)} €/m².`
-   : `<b>Mietrecht: freie Mietzinsbildung.</b> Angenommen für Bauten ab 1945 bzw. DG-Ausbauten nach 2001 (MRG-Teilanwendung). Mieterhöhungen sind seit 2026 durch das Mieten-Wertsicherungsgesetz begrenzt. Basis: Angebotsmieten ${esc(DATA[rc.ask?Object.keys(RENT_ASK).find(k=>RENT_ASK[k]===rc.ask):1].name)} ${fmt(rc.ask[0],2)}/${fmt(rc.ask[1],2)} €/m² brutto → netto ca. ${fmt(rc.freiNet,2)} €/m².`;
+   : `<b>Mietrecht: freie Mietzinsbildung.</b> Angenommen für Bauten ab 1945 bzw. DG-Ausbauten nach 2001 (MRG-Teilanwendung). Mieterhöhungen sind seit 2026 durch das Mieten-Wertsicherungsgesetz begrenzt. Größenfaktor ${fmt(rc.szf,2)} (kleine Wohnungen erzielen mehr pro m²). Basis: Angebotsmieten ${esc(DATA[rc.ask?Object.keys(RENT_ASK).find(k=>RENT_ASK[k]===rc.ask):1].name)} ${fmt(rc.ask[0],2)}/${fmt(rc.ask[1],2)} €/m² brutto → netto ca. ${fmt(rc.freiNet,2)} €/m².`;
 }
 function renderRent(ev){
   const rc=rentCalc(S, ev.r);
@@ -1167,7 +1176,7 @@ function renderRent(ev){
    ${rentBarsSVG(rc.rows)}
    ${rentTable(rc)}
    <div class="small muted" style="margin-top:6px">${rc.rows.map(r=>`<b>${r.n}:</b> ${r.desc}`).join(" · ")}</div>
-   <div class="refbox">${rentNotes(rc)}<br>Lagezuschlag-Vorgabe ${S.bezirk}. Bezirk: ${fmt(LZ_DEF[S.bezirk],2)} €/m² (grobe Orientierung – genauen Wert im Lagezuschlagsrechner der Stadt Wien je Adresse prüfen).</div>`;
+   <div class="refbox" ${rc.market?'style="border-color:#d99a00;background:#fff8e6"':""}>${rentNotes(rc)}<br>Lagezuschlag-Vorgabe ${S.bezirk}. Bezirk: ${fmt(LZ_DEF[S.bezirk],2)} €/m² (grobe Orientierung – genauen Wert im Lagezuschlagsrechner der Stadt Wien je Adresse prüfen).</div>`;
   return rc;
 }
 
@@ -1312,7 +1321,7 @@ function reportHTML(){
    <h3>Rendite &amp; Cashflow</h3>${rentTable(rc,"n")}
    <div class="small muted" style="margin-top:4px">${rc.rows.map(x=>`<b>${x.n}:</b> ${x.desc}`).join(" · ")}. Investition ${eur(rc.invest)} (Kauf, Nebenkosten, Sanierung, Finanzierungsspesen); Kreditrate ${eur(rc.rate)}/Mo. über ${S.tilgJahre||25} Jahre; nicht umlagefähige Kosten ${fmt(+S.nonUml,2)} €/m²/Mo.</div>
    <h3>Mietrechtliche Einordnung</h3><div class="box small">${rentNotes(rc)}</div>
-   <div class="small muted" style="margin-top:6px">Quellen: Richtwert Wien ${fmt(RICHTWERT,2)} €/m² ab 1.4.2026 (Statistik Austria, Valorisierung § 5 RichtWG); Angebotsmieten je Bezirk: Medianwerte mietdaten.at und rentradar.rentals (Nov. 2026). Angebotsmieten liegen meist über den tatsächlichen Vertragsmieten.</div>
+   <div class="small muted" style="margin-top:6px">Quellen: Richtwert Wien ${fmt(RICHTWERT,2)} €/m² ab 1.4.2026 (Statistik Austria, Valorisierung § 5 RichtWG); Angebotsmieten je Bezirk: Medianwerte mietdaten.at und rentradar.rentals (Nov. 2026); Größen- und Sanierungsfaktor aus 707 willhaben-Altbau-Inseraten 20–140 m² (Nov. 2026) und derStandard-Preisspiegel Miete 2025–26. Angebotsmieten liegen meist über den tatsächlichen Vertragsmieten.</div>
    ${foot}</div>`;
   return `<div class="rp">${p1}${p2}${p3}${p4}${pD}${p5}</div>`;
 }
