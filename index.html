@@ -270,7 +270,7 @@ body.modal-open{overflow:hidden}
       <h2>Kauf &amp; Finanzierung</h2>
       <p class="hint">Kaufnebenkosten nach österreichischem Recht sind vorbelegt (Grunderwerbsteuer 3,5 %, Grundbucheintragung 1,1 %, Pfandrechtseintragung 1,2 %, Maklerprovision max. 3 % + 20 % USt).</p>
       <div class="grid">
-        <label class="f">Kaufpreis (Angebot / Verhandlung)<div class="inrow"><input data-k="kaufpreis" type="number" step="1000"><span>€</span></div></label>
+        <label class="f">Kaufpreis (Angebot / Verhandlung)<div class="inrow"><input data-k="kaufpreis" type="number" step="1000"><span>€</span></div><small id="kpM2Hint"></small></label>
         <label class="f">Käuferprovision Makler<div class="inrow"><input data-k="maklerKauf" type="number" step="0.1"><span>% netto</span></div><small>0 wenn provisionsfrei; + 20 % USt</small></label>
         <label class="f">Vertragserrichtung &amp; Treuhand<div class="inrow"><input data-k="notar" type="number" step="0.1"><span>% netto</span></div><small>üblich 1–2 % + 20 % USt</small></label>
         <label class="f">Grunderwerbsteuer<div class="inrow"><input data-k="grest" type="number" step="0.1"><span>%</span></div></label>
@@ -723,6 +723,8 @@ function update(){
   const abschlag = scopeM2<400?0.92: scopeM2<900?0.82: scopeM2<1500?0.74:0.66;
   const fairM2 = refPrice(S,false)*(1+r.lfSum)*abschlag;
   const diff = kpM2/fairM2-1;
+  { const bzM2=refPrice(S,S.aussen!=="nein"), dB=kpM2/bzM2-1, h=$("#kpM2Hint");
+    h.innerHTML = r.A>0&&r.P>0 ? `= <b>${fmt(kpM2)} €/m²</b>${r.zub.inKP?` (ohne Zubehör ${eur(r.zub.inKP)})`:""} · Bezirks-Ø ${fmt(bzM2)} €/m² <span class="${dB<=0?"pos":"neg"}">(${dB>=0?"+":"−"}${fmt(Math.abs(dB)*100)} %)</span> · fair ${fmt(fairM2)} €/m²` : "Wohnfläche eingeben → €/m² erscheint hier"; }
   $("#refKauf").innerHTML=`Kaufpreis <b>${fmt(kpM2)} €/m²</b>${r.zub.inKP?` <span class="muted">(ohne mitgekauftes Zubehör ${eur(r.zub.inKP)})</span>`:""} · Bezirks-Ø (gleiche Klasse, alle Zustände) <b>${fmt(refPrice(S,false))} €/m²</b> → ${pct(kpM2/refPrice(S,false)-1)} <br>
    Fairer Ankaufspreis bei diesem Sanierungsumfang (Annahme: −${fmt((1-abschlag)*100)} % vs. Ø, lagebereinigt): <b>${fmt(fairM2)} €/m²</b> ≈ <b>${eur(fairM2*r.A)}</b>
    <span class="pill ${diff<=-0.05?'ok':diff<=0.05?'warn':'bad'}">${diff<=0?'':'+'}${pct(diff)} ${diff<=-0.05?'unter Markt':diff<=0.05?'marktüblich':'über Markt'}</span><br>
