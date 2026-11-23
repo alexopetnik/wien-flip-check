@@ -107,6 +107,10 @@ svg text{font-family:inherit}
 #exportModal.open{display:block}
 #exportModal .bar{height:auto;overflow:visible;border-radius:0;margin:0;position:sticky;top:0;z-index:2;background:#1d2330;color:#fff;display:flex;gap:10px;align-items:center;padding:10px 20px}
 #exportModal .bar b{margin-right:auto}
+#exportModal .bar select{font:inherit;padding:7px 10px;border-radius:8px;border:1px solid #4a5368;background:#2b3345;color:#fff}
+#exportModal .bar{flex-wrap:wrap}
+#bankForm{display:none;flex:1 1 100%;gap:8px;flex-wrap:wrap}#bankForm.on{display:flex}
+#bankForm input{font:inherit;flex:1 1 180px;min-width:0;padding:7px 10px;border-radius:8px;border:1px solid #4a5368;background:#fff;color:#1d2330}
 #exportBody{padding:20px 0}
 body.modal-open{overflow:hidden}
 #dash{display:none;position:fixed;inset:0;background:var(--bg);z-index:45;overflow:auto;-webkit-overflow-scrolling:touch}
@@ -413,7 +417,7 @@ body.modal-open{overflow:hidden}
 <aside id="side"></aside>
 </main>
 <div id="dash"><div class="bar"><b>Meine Objekte</b><button id="btnSync"><span class="sdot"></span>Sync</button><button class="pri" id="dashNew">+ Neues Objekt</button><button id="dashClose">Zum Rechner</button></div><div id="syncBox"><div class="sbox" id="syncCard"></div></div><div id="dashBody"></div></div>
-<div id="exportModal"><div class="bar"><b>Bericht-Vorschau (A4)</b><button class="pri" id="btnPdf">Als PDF speichern / drucken</button><button id="btnHtml">Als HTML herunterladen</button><button id="btnClose">Schließen</button></div><div id="exportBody"></div></div>
+<div id="exportModal"><div class="bar"><b>Bericht-Vorschau (A4)</b><select id="expMode" aria-label="Berichtsart"><option value="full">Investment-Bericht (intern)</option><option value="bank">Bank-PDF (Finanzierungsanfrage)</option></select><button class="pri" id="btnPdf">Als PDF speichern / drucken</button><button id="btnHtml">Als HTML herunterladen</button><button id="btnClose">Schließen</button><div id="bankForm"><input data-b="bankFirma" placeholder="Kreditnehmer (Firma)"><input data-b="bankFN" placeholder="Firmenbuchnummer"><input data-b="bankGF" placeholder="Geschäftsführer / Ansprechpartner"><input data-b="bankKontakt" placeholder="Telefon / E-Mail"><input data-b="bankSicher" placeholder="Zusätzliche Sicherheiten (optional)"><input data-b="bankVkQuelle" placeholder="Begründung Verkaufspreis, z. B. Vergleichsinserate (optional)"></div></div><div id="exportBody"></div></div>
 
 <script>
 const DATA = {"1":{"name":"Innere Stadt","ohne":[7077,7077,7077,8287,8287,8287,9477,9477,9477],"mit":[9320,9320,9320,8287,8287,8287,9477,9477,9477],"trend":[6606,8301,9368,10536,11186,10947,13130,14221,12708,14956,11576]},"2":{"name":"Leopoldstadt","ohne":[4914,4630,4509,4886,4603,4483,6760,6369,6203],"mit":[6437,6064,5906,5474,5157,5023,7847,7392,7199],"trend":[3643,4119,4327,4467,4574,5436,5585,6660,5524,5324,5878]},"3":{"name":"Landstraße","ohne":[4795,4814,4699,4520,4538,4429,5632,5655,5519],"mit":[6655,6682,6521,5353,5375,5246,6791,6818,6654],"trend":[3934,4033,4483,4783,4393,5490,5714,5609,5768,5801,6549]},"4":{"name":"Wieden","ohne":[5956,5397,5484,5431,4921,5000,7878,7139,7253],"mit":[7951,7205,7321,5603,5077,5159,10209,9251,9400],"trend":[4167,4203,4904,5323,5661,5583,6565,7826,6621,6446,7243]},"5":{"name":"Margareten","ohne":[4668,4476,4367,4510,4325,4220,5600,5370,5239],"mit":[6899,6616,6455,4901,4699,4585,7624,7311,7134],"trend":[3273,3495,3548,3662,3779,4624,5571,5403,4562,5122,5099]},"6":{"name":"Mariahilf","ohne":[5693,5445,5513,4959,4743,4802,4923,4708,4768],"mit":[7058,6751,6835,6252,5980,6055,7433,7109,7198],"trend":[4147,4367,4081,4105,4818,5179,5652,5777,5187,5944,6395]},"7":{"name":"Neubau","ohne":[5382,5110,5497,5106,4849,5216,6544,6214,6684],"mit":[6605,6272,6747,6344,6025,6481,8196,7783,8372],"trend":[4782,4523,4755,5405,5883,6000,6300,6222,5929,6456,6110]},"8":{"name":"Josefstadt","ohne":[5869,5797,5854,5292,5227,5278,6422,6343,6404],"mit":[6550,6469,6532,6754,6671,6736,7943,7846,7922],"trend":[3839,4792,5230,5000,4827,6037,7697,7697,6219,5714,6028]},"9":{"name":"Alsergrund","ohne":[5507,5549,5619,4714,4750,4811,6356,6404,6486],"mit":[6610,6660,6745,6237,6285,6365,7268,7324,7417],"trend":[4119,4084,4949,5122,5260,5160,5741,6207,6034,5855,6096]},"10":{"name":"Favoriten","ohne":[3344,3024,2793,3458,3127,2889,4814,4354,4022],"mit":[4672,4225,3903,3737,3380,3122,6293,5691,5257],"trend":[2436,3331,3188,3943,3910,3555,3566,4211,3786,3852,3833]},"11":{"name":"Simmering","ohne":[3364,3048,2773,3591,3254,2961,3980,3606,3281],"mit":[4632,4197,3819,3906,3539,3221,5466,4953,4507],"trend":[3038,2932,2865,2980,2985,3333,3882,4898,3349,3504,3533]},"12":{"name":"Meidling","ohne":[3969,3795,3509,3737,3573,3303,5464,5225,4831],"mit":[6068,5802,5364,4735,4527,4185,6002,5739,5306],"trend":[3211,3186,3505,3850,3922,4246,4750,5242,4819,4149,4516]},"13":{"name":"Hietzing","ohne":[4353,4300,4495,4150,4100,4285,5978,5905,6173],"mit":[5522,5454,5701,4809,4751,4966,7436,7345,7678],"trend":[4232,4167,4036,4389,4460,4853,5624,6211,5275,4863,5173]},"14":{"name":"Penzing","ohne":[3869,3827,3677,3735,3694,3550,5861,5796,5571],"mit":[5631,5570,5353,4134,4089,3930,6804,6729,6467],"trend":[3288,3775,3524,3739,3980,4603,5621,6089,5474,4567,4699]},"15":{"name":"Rudolfsheim-Fünfhaus","ohne":[4061,3763,3642,3876,3591,3476,5294,4905,4748],"mit":[5806,5379,5207,5418,5020,4859,6113,5664,5482],"trend":[2403,3393,3239,3832,3850,4111,4719,4475,4172,4101,4532]},"16":{"name":"Ottakring","ohne":[3730,3551,3499,3750,3571,3518,5569,5303,5224],"mit":[5598,5330,5252,4365,4156,4095,6608,6292,6200],"trend":[2883,3153,3286,3590,4269,4217,4839,4843,4212,4545,4785]},"17":{"name":"Hernals","ohne":[3890,3760,3635,4082,3945,3814,5885,5687,5499],"mit":[5838,5641,5455,4602,4448,4301,7554,7300,7059],"trend":[3360,3802,3796,3818,4070,4048,4587,5737,5281,5210,5222]},"18":{"name":"Währing","ohne":[4740,4470,4665,4831,4556,4755,6081,5735,5985],"mit":[6488,6119,6386,5417,5109,5332,8409,7931,8277],"trend":[4033,3850,4576,4742,4574,5042,6000,5914,6027,5519,6180]},"19":{"name":"Döbling","ohne":[4906,5036,5013,4418,4536,4515,5909,6066,6039],"mit":[6166,6330,6301,5358,5501,5476,8194,8412,8374],"trend":[3955,4213,4315,4480,5000,5479,6262,6901,5960,5573,5655]},"20":{"name":"Brigittenau","ohne":[4043,3812,3781,3785,3569,3541,5365,5058,5017],"mit":[5856,5521,5477,4130,3893,3862,6626,6247,6197],"trend":[2657,3064,2966,3182,3494,3971,4400,4250,3939,3840,4015]},"21":{"name":"Floridsdorf","ohne":[3351,3169,2968,3411,3225,3021,4912,4645,4351],"mit":[4546,4299,4026,3975,3759,3520,5707,5396,5054],"trend":[2869,3253,3394,3665,3894,4110,4456,4852,4450,4476,5253]},"22":{"name":"Donaustadt","ohne":[4093,3653,3470,4373,3904,3708,5841,5214,4952],"mit":[5445,4860,4616,4731,4223,4011,6271,5598,5316],"trend":[3679,3903,3953,4265,4557,4782,5111,5932,5600,5443,5714]},"23":{"name":"Liesing","ohne":[3709,3251,3187,3718,3259,3194,5487,4810,4714],"mit":[4649,4076,3994,4250,3725,3651,6012,5270,5165],"trend":[3047,3397,3878,3590,3884,4301,4499,5090,4820,4917,4835]}};
@@ -471,6 +475,7 @@ const DEFAULTS = {
   checks:{}, sonderumlage:0,
   ausstattung:"geh", vkOverride:"", mVor:2, mBau:4, mVerk:4, bk:3.6, maklerVerk:3, marketing:3500,
   steuer:"gmbh", grenzsatz:48, zielmarge:20,
+  bankFirma:"", bankFN:"", bankGF:"", bankKontakt:"", bankSicher:"", bankVkQuelle:"",
   mietRecht:"auto", altAnsatz:"markt", befristet:"ja", lagezuschlag:"", nonUml:1.2, tilgJahre:25,
 };
 delete DEFAULTS.comps.reserve; delete DEFAULTS.comps.planung;
@@ -764,7 +769,7 @@ function renderSide(ev){
   <div class="card" style="margin-top:12px;padding:12px 14px"><b class="small">Risiken &amp; Hinweise</b>
    <ul class="flags">${ev.rk.flags.length? ev.rk.flags.map(f=>`<li><span class="pill ${f[0]==='ko'?'bad':f[0]}">${f[0]==='ko'?'K.O.':f[0]==='bad'?'hoch':f[0]==='warn'?'mittel':'Info'}</span><span>${f[1]}</span></li>`).join("") : '<li class="muted">Keine Auffälligkeiten erfasst – Checkliste unter „Haus &amp; Recht“ ausfüllen.</li>'}</ul></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="noprint" onclick="go(8)">Auswertung</button><button class="noprint" onclick="go(7)">Deal verbessern</button><button class="noprint" onclick="go(6)">Vermietung</button><button class="noprint" onclick="go(5)">Nachfrage</button></div>
-  <button class="pri noprint" style="width:100%;margin-top:8px" onclick="openExport()">Bericht exportieren (PDF / HTML)</button>`;
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button class="pri noprint" onclick="openExport('full')">Bericht exportieren (PDF / HTML)</button><button class="noprint" onclick="openExport('bank')">Bank-PDF (Finanzierungsanfrage)</button></div>`;
 }
 
 function renderReport(ev){
@@ -1196,6 +1201,8 @@ const REPORT_CSS = `
 .rp-cover h1{font-size:28px;margin:6px 0 4px;font-weight:750}
 .rp-cover .meta{color:#c9cfdb;font-size:12px}
 .rp-cover .stamp{position:absolute;right:14mm;top:16mm;border:2px solid rgba(255,255,255,.5);border-radius:8px;padding:6px 10px;font-size:10px;text-align:right;color:#dfe3ea}
+.rp-cover.bank{background:linear-gradient(135deg,#14243b 0%,#1f3a5f 100%)}.rp-cover.bank .brand{color:#9cc3ef}
+.rp .chk li{padding:3px 0}.rp .chk li:before{content:"☐ ";color:#6b7385}
 .rp-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .rp-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .rp-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -1221,6 +1228,86 @@ const REPORT_CSS = `
 .rp .avoid{break-inside:avoid}
 @media print{.rp-page{margin:0;box-shadow:none;page-break-after:always;break-after:page;min-height:auto;height:297mm}.rp-page:last-child{page-break-after:auto;break-after:auto}}
 `;
+function bankHTML(){
+  const ev=evaluate(S), r=ev.r, d=DATA[S.bezirk];
+  const date=new Date().toLocaleDateString("de-AT",{day:"2-digit",month:"long",year:"numeric"});
+  const title=esc(S.name||`Wohnung ${S.bezirk}. Bezirk`), firma=esc(S.bankFirma||"");
+  const head=n=>`<div class="rp-head"><b>FINANZIERUNGSANFRAGE</b><span>${title}${firma?" · "+firma:""} · ${date}</span><span class="rp-pn">Seite ${n}</span></div>`;
+  const foot=`<div class="rp-foot"><span>Planrechnung des Antragstellers · Marktdaten: Statistik Austria, Immobilien-Durchschnittspreise 2025</span><span>Zinssatz und Kosten sind Annahmen · Beträge in Euro inkl. USt</span></div>`;
+  const kpi=(k,v,c="")=>`<div class="rp-kpi"><div class="k">${k}</div><div class="v ${c}">${v}</div></div>`;
+  const tr=(l,v,c="")=>`<tr${c?` class="${c}"`:""}><td>${l}</td><td class="n">${v}</td></tr>`;
+  const bjTxt=["bis 1960","1961–1990","ab 1991"][+S.baujahr], stockTxt={sout:"Souterrain",eg:"Erdgeschoß",og12:"1.–2. Stock",og3:"3. Stock +",dg:"Dachgeschoß"}[S.stock];
+  const invest=r.total-r.vkMakler, ek=r.eigenkapital, mv=(+S.maklerVerk/100)*1.2;
+  const rueck=x=>x.sale-x.vkMakler-x.loan;
+  const deckM2=(r.loan/(1-mv)-r.zub.wert)/r.A, puffer=1-deckM2/r.vkM2;
+  const lb={k:"Kaufpreis",ks:"Kaufpreis + Sanierung",gesamt:"Kaufpreis + Kaufnebenkosten + Sanierung"}[S.ltvBasis||"ks"];
+  const sc=[...ev.sc.slice(0,2),["Verkaufspreis −20 %",calc(S,{saleMult:0.8})],...ev.sc.slice(2)];
+  const c10=cagr(d.trend,0,10);
+  const kv=(l,v)=>v?`<tr><td>${l}</td><td>${v}</td></tr>`:"";
+  const p1=`<div class="rp-page">
+   <div class="rp-cover bank"><div class="brand">Finanzierungsanfrage · Ankauf &amp; Sanierung</div><h1>${title}</h1>
+    <div class="meta">${S.bezirk}. Bezirk, ${esc(d.name)} · ${fmt(r.A)} m² · ${esc(S.zimmer)} Zimmer · ${stockTxt}</div>
+    <div class="stamp">Stand<br><b style="font-size:12px;color:#fff">${date}</b></div></div>
+   <div class="rp-grid4">${kpi("Gesamtinvestition",eur(invest))}${kpi("Angefragter Kredit",eur(r.loan))}${kpi("Eigenkapital",eur(ek)+` <span class="small muted">${pct(ek/invest,0)}</span>`)}${kpi("Laufzeit",r.months+" Monate")}
+    ${kpi("Kredit / Investition (LTC)",pct(r.loan/invest))}${kpi("Kredit / Verkaufswert (LTV)",pct(r.loan/r.sale))}${kpi("Kredit gedeckt bis",fmt(deckM2)+" €/m²")}${kpi("Preispuffer für Kredit",pct(puffer),puffer>=0.2?'pos':puffer<0.1?'neg':'')}</div>
+   <div class="rp-grid2" style="margin-top:12px">
+    <div><h3>Antragsteller</h3><table class="facts"><tbody>
+     <tr><td>Kreditnehmer</td><td>${firma||'<span class="muted">–</span>'}</td></tr>${kv("Firmenbuchnummer",esc(S.bankFN))}${kv("Geschäftsführer",esc(S.bankGF))}${kv("Kontakt",esc(S.bankKontakt))}
+     <tr><td>Rechtsform / Besteuerung</td><td>${{privat:"Privatperson",gmbh:"GmbH",gmbhaus:"GmbH",gewerb:"Gewerblich"}[S.steuer]}</td></tr></tbody></table></div>
+    <div><h3>Objekt</h3><table class="facts"><tbody>
+     <tr><td>Objekt</td><td>${title}</td></tr><tr><td>Bezirk</td><td>${S.bezirk}. ${esc(d.name)}</td></tr><tr><td>Wohnfläche / Zimmer</td><td>${fmt(r.A)} m² / ${esc(S.zimmer)}</td></tr>
+     <tr><td>Baujahr</td><td>${bjTxt}</td></tr><tr><td>Stockwerk / Lift</td><td>${stockTxt} / ${{ja:"ja",nein:"nein",geplant:"geplant"}[S.lift]}</td></tr>
+     <tr><td>Außenfläche</td><td>${{nein:"keine",ja:"vorhanden",neu:"wird errichtet"}[S.aussen]}</td></tr></tbody></table></div>
+   </div>
+   <h3>Vorhaben</h3><div class="box">Ankauf der Wohnung um <b>${eur(r.P)}</b> (${fmt((r.P-r.zub.inKP)/r.A)} €/m²), Sanierung auf Standard <b>„${AUSST[S.ausstattung][1]}“</b> mit einem Budget von <b>${eur(r.sanTotal)}</b> und anschließender Verkauf um rund <b>${fmt(r.vkM2)} €/m²</b>. Der Kredit wird vollständig aus dem Verkaufserlös zurückgezahlt.</div>
+   <h3>Zeitplan</h3><table><thead><tr><th>Phase</th><th class="n">Dauer</th></tr></thead><tbody>
+    ${tr("Kauf und Vorbereitung (Planung, Angebote)",S.mVor+" Mo.")}${tr("Sanierung",S.mBau+" Mo.")}${tr("Vermarktung und Verkauf",S.mVerk+" Mo.")}<tr class="sum"><td>Kreditlaufzeit gesamt</td><td class="n">${r.months} Mo.</td></tr></tbody></table>
+   ${foot}</div>`;
+  const p2=`<div class="rp-page">${head(2)}<h2>Investitions- und Finanzierungsplan</h2>
+   <div class="rp-grid2" style="grid-template-columns:1.25fr 1fr;align-items:start">
+    <div><h3>Mittelverwendung</h3><table><tbody>
+     ${tr("Kaufpreis",eur(r.P))}${r.parkKauf?tr("Stellplatz (Zukauf)",eur(r.parkKauf)):""}${tr(`Grunderwerbsteuer ${S.grest} %`,eur(r.nkGrest))}${tr(`Grundbucheintragung ${S.gbEig} %`,eur(r.nkGb))}
+     ${tr("Vertragserrichtung / Treuhand",eur(r.nkNotar))}${r.nkMakler?tr("Maklerprovision Kauf",eur(r.nkMakler)):""}
+     ${tr(`Sanierung${r.san.res&&!r.san.override?` <span class="muted small">(inkl. Reserve ${eur(r.san.res)})</span>`:""}${+S.sonderumlage?' <span class="muted small">inkl. Sonderumlage</span>':''}`,eur(r.sanTotal))}
+     ${tr(`Zinsen (${S.zins} %, ${r.months} Mo.)`,eur(r.zinsen))}${tr("Pfandrecht-Eintragung + Bankspesen",eur(r.nkPfand+r.nkBank))}
+     ${tr("Betriebskosten während der Projektdauer",eur(r.halte))}${tr("Vermarktung",eur(+S.marketing))}
+     ${tr("Gesamtinvestition",eur(invest),"sum")}</tbody></table></div>
+    <div><h3>Mittelherkunft</h3><table><tbody>${tr("Eigenkapital",eur(ek))}${tr("<b>Bankkredit (angefragt)</b>","<b>"+eur(r.loan)+"</b>")}${tr("Summe",eur(invest),"sum")}</tbody></table>
+     <table class="facts" style="margin-top:8px"><tbody><tr><td>Eigenkapitalquote</td><td>${pct(ek/invest)}</td></tr><tr><td>Kreditbasis</td><td>${fmt(+S.ltv)} % von ${lb}</td></tr>
+     <tr><td>Kredit / Investition</td><td>${pct(r.loan/invest)}</td></tr><tr><td>Kredit / Verkaufswert</td><td>${pct(r.loan/r.sale)}</td></tr>
+     <tr><td>Pfandrecht (Höchstbetrag)</td><td>${eur(r.loan*1.25)}</td></tr></tbody></table></div>
+   </div>
+   <h3>Verkauf und Rückzahlung des Kredits</h3>
+   <div class="rp-grid2" style="grid-template-columns:1.25fr 1fr;align-items:start">
+    <table><tbody>${tr(`Verkaufserlös (${fmt(r.vkM2)} €/m² × ${fmt(r.A)} m²${r.zub.wert?` ${r.zub.wert>0?'+':'−'} Zubehör`:""})`,eur(r.sale))}${tr("− Maklerprovision Verkauf",eur(-r.vkMakler))}
+     ${tr("− Rückzahlung Bankkredit",eur(-r.loan))}${tr("Rückfluss an Eigenkapital",eur(rueck(r)),"sum")}</tbody></table>
+    <table class="facts"><tbody><tr><td>Gewinn vor Steuern</td><td><b>${eur(r.gewinnVor)}</b></td></tr><tr><td>Marge auf Gesamtkosten</td><td>${pct(r.marge)}</td></tr>
+     <tr><td>Break-even-Verkaufspreis</td><td>${fmt(ev.be)} €/m²</td></tr><tr><td>Kredit voll gedeckt bis</td><td><b>${fmt(deckM2)} €/m²</b> (−${pct(puffer,0)})</td></tr></tbody></table>
+   </div>
+   <div class="avoid"><h3>Stresstest</h3><table><thead><tr><th>Szenario</th><th class="n">Verkaufserlös</th><th class="n">Kredit</th><th class="n">Gewinn vor Steuern</th><th class="n">Rückfluss nach Kredit</th><th></th></tr></thead><tbody>
+    ${sc.map(([n,x])=>{const rf=rueck(x);return `<tr><td>${n}</td><td class="n">${eur(x.sale)}</td><td class="n">${eur(x.loan)}</td><td class="n">${eur(x.gewinnVor)}</td><td class="n"><b>${eur(rf)}</b></td><td>${rf>=0?'<span class="pill ok">Kredit gedeckt</span>':'<span class="pill bad">Unterdeckung</span>'}</td></tr>`;}).join("")}
+   </tbody></table><div class="small muted" style="margin-top:4px">Rückfluss nach Kredit = Verkaufserlös − Makler − Kreditrückzahlung. Ein positiver Wert heißt: Der Kredit ist auch in diesem Szenario vollständig aus dem Verkauf gedeckt.</div></div>
+   ${foot}</div>`;
+  const rows=r.san.rows.filter(x=>x.cost>0).map(x=>[x.c.l,x.opt[0],x.cost]);
+  if(r.san.extra) rows.push(["Ausstattungs-Aufpreis",AUSST[S.ausstattung][1],r.san.extra]);
+  rows.push(["Planung + Reserve",`${S.planung} % + ${S.reserve} %`,r.san.plan+r.san.res]);
+  const h=Math.ceil(rows.length/2), t=rs=>`<table><tbody>${rs.map(x=>`<tr><td>${x[0]}<div class="small muted">${x[1]}</div></td><td class="n">${eur(x[2])}</td></tr>`).join("")}</tbody></table>`;
+  const p3=`<div class="rp-page">${head(3)}<h2>Sanierung, Markt und Sicherheiten</h2>
+   <h3>Sanierungsbudget (${fmt(r.san.total/r.A)} €/m²)</h3>
+   ${r.san.override?`<table><tbody>${tr("Sanierung laut Angebot (Pauschale)",eur(r.san.total))}</tbody></table>`:`<div class="rp-grid2">${t(rows.slice(0,h))}${t(rows.slice(h))}</div>`}
+   <table style="margin-top:2px"><tbody><tr class="sum"><td>Sanierung gesamt</td><td class="n">${eur(r.san.total)}</td></tr></tbody></table>
+   <h3>Marktbezug Verkaufspreis</h3>
+   <div class="rp-grid2" style="align-items:start"><table class="facts"><tbody>
+     <tr><td>Bezirks-Ø (Statistik Austria, ${bjTxt})</td><td>${fmt(refPrice(S,S.aussen!=="nein"))} €/m²</td></tr><tr><td>Angesetzter Verkaufspreis saniert</td><td><b>${fmt(r.vkM2)} €/m²</b></td></tr>
+     <tr><td>Preisentwicklung Bezirk (10 J. p. a.)</td><td>${pct(c10)}</td></tr>${S.bankVkQuelle?`<tr><td>Begründung</td><td>${esc(S.bankVkQuelle)}</td></tr>`:""}</tbody></table>
+    <div>${lineSVG(d.trend)}<div class="small muted">Ø Wohnungspreis €/m² im ${S.bezirk}. Bezirk 2015–2025. Die Planung unterstellt keine Marktsteigerung.</div></div></div>
+   <div class="rp-grid2" style="align-items:start">
+    <div class="avoid"><h3>Sicherheiten</h3><ul class="fl"><li>Erstrangiges Pfandrecht auf der finanzierten Wohnung, Höchstbetrag ${eur(r.loan*1.25)}</li>${S.bankSicher?`<li>${esc(S.bankSicher)}</li>`:""}<li>Rückzahlung aus dem Verkaufserlös; Kredit gedeckt bis ${fmt(deckM2)} €/m² Verkaufspreis</li></ul></div>
+    <div class="avoid"><h3>Beigelegte Unterlagen</h3><ul class="fl chk">${["Firmenbuchauszug und Gesellschaftsvertrag","Jahresabschluss bzw. Eröffnungsbilanz","Grundbuchauszug","Kaufanbot / Kaufvertragsentwurf","Wohnungseigentumsvertrag, Nutzwertgutachten","Protokolle Eigentümerversammlung, Rücklage","Energieausweis, Grundriss, Fotos","GU-Angebot mit Leistungsbeschreibung","Vergleichsinserate / Maklereinschätzung"].map(x=>`<li>${x}</li>`).join("")}</ul></div>
+   </div>
+   ${foot}</div>`;
+  return `<div class="rp">${p1}${p2}${p3}</div>`;
+}
 function reportHTML(){
   const ev=evaluate(S), r=ev.r, d=DATA[S.bezirk], {lv,tg}=renderDeal(ev);
   const date=new Date().toLocaleDateString("de-AT",{day:"2-digit",month:"long",year:"numeric"});
@@ -1351,14 +1438,18 @@ function paginate(root){
   all.forEach((pg,i)=>{ const pn=pg.querySelector(".rp-pn"); if(pn) pn.textContent=`Seite ${i+1} / ${all.length}`; });
 }
 function fitExport(){ const b=$("#exportBody .rp"); if(b) b.style.zoom = innerWidth<820 ? ((innerWidth-12)/800).toFixed(3) : ""; }
-function openExport(){ $("#exportBody").innerHTML=reportHTML(); $("#exportModal").classList.add("open"); paginate($("#exportBody")); fitExport(); document.body.classList.add("modal-open"); }
+let expMode="full";
+const curReport=()=>expMode==="bank"?bankHTML():reportHTML();
+function renderExport(){ $("#expMode").value=expMode; $("#bankForm").classList.toggle("on",expMode==="bank"); $$("#bankForm input").forEach(i=>{ if(document.activeElement!==i) i.value=S[i.dataset.b]||""; });
+  $("#exportBody").innerHTML=curReport(); paginate($("#exportBody")); fitExport(); }
+function openExport(mode){ if(mode==="bank"||mode==="full") expMode=mode; $("#exportModal").classList.add("open"); document.body.classList.add("modal-open"); renderExport(); }
 window.addEventListener("resize",fitExport);
 window.addEventListener("beforeprint",()=>{ const b=$("#exportBody .rp"); if(b) b.style.zoom=""; });
 window.addEventListener("afterprint",fitExport);
 function closeExport(){ $("#exportModal").classList.remove("open"); document.body.classList.remove("modal-open"); }
 function fileBase(){
   const n=(S.name||"").replace(/[\/\\:*?"<>|]+/g,"-").replace(/\s+/g," ").trim().slice(0,120);
-  return n || `Flip-Check ${S.bezirk}. Bezirk`;
+  return (n || `Flip-Check ${S.bezirk}. Bezirk`)+(expMode==="bank"?" – Finanzierungsanfrage":"");
 }
 const APP_TITLE=document.title;
 window.addEventListener("beforeprint",()=>{ document.title=fileBase(); });
@@ -1484,7 +1575,7 @@ function dashCard(x){
     ${f("Max. Kaufpreis",eur(ev.maxKP))}${f("Nachfrage-Fit",`${ev.dm.fit}/100`)}${f("Miete real.",rent?`${eur(rent.miete)} · ${pct(rent.brutto)}`:"–")}
    </div>
    <div class="acts"><select data-act="status">${STATUS.map(s=>`<option ${s===x.status?"selected":""}>${s}</option>`).join("")}</select>
-    <button class="pri" data-act="open">Öffnen</button><button data-act="report">Bericht</button><button data-act="dup">Duplizieren</button><button data-act="del">Löschen</button></div>
+    <button class="pri" data-act="open">Öffnen</button><button data-act="report">Bericht</button><button data-act="bank">Bank-PDF</button><button data-act="dup">Duplizieren</button><button data-act="del">Löschen</button></div>
   </div>`;
 }
 function renderDash(){
@@ -1521,7 +1612,8 @@ function renderDash(){
 }
 $("#dashBody").addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(!b||b.tagName==="SELECT") return; const k=b.closest(".dcard").dataset.k, all=loadAll();
   if(b.dataset.act==="open") loadObj(k);
-  else if(b.dataset.act==="report"){ loadObj(k); openExport(); }
+  else if(b.dataset.act==="report"){ loadObj(k); openExport("full"); }
+  else if(b.dataset.act==="bank"){ loadObj(k); openExport("bank"); }
   else if(b.dataset.act==="dup"){ let n=k+" (Kopie)", i=2; while(all[n]) n=`${k} (Kopie ${i++})`; all[n]={...all[k],name:n,_ts:Date.now()}; saveAll(all); refreshSaved(); renderDash(); toast(`„${n}“ angelegt`); }
   else if(b.dataset.act==="del"){ if(!confirm(`„${k}“ löschen?`)) return; delete all[k]; markDel(k); if(curKey===k) curKey=null; saveAll(all); refreshSaved(); renderDash(); }
 });
@@ -1533,10 +1625,12 @@ $("#btnSync").onclick=()=>{ const b=$("#syncBox"); b.classList.toggle("open"); i
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncNow(); else if(pushT){ clearTimeout(pushT); pushT=null; syncNow(); } });
 window.addEventListener("online",()=>syncNow());
 if(syncCfg().token) setTimeout(()=>syncNow(),300); $("#dashClose").onclick=closeDash; $("#dashNew").onclick=()=>{ $("#btnNew").onclick(); closeDash(); };
-$("#btnPrint").onclick=openExport;
+$("#btnPrint").onclick=()=>openExport("full");
 $("#btnPdf").onclick=()=>{ document.title=fileBase(); window.print(); }; $("#btnHtml").onclick=downloadHTML; $("#btnClose").onclick=closeExport;
+$("#expMode").onchange=e=>{ expMode=e.target.value; renderExport(); };
+let bankT; $$("#bankForm input").forEach(i=>i.addEventListener("input",()=>{ S[i.dataset.b]=i.value.trim(); clearTimeout(bankT); bankT=setTimeout(renderExport,350); }));
 let printedFromApp=false;
-window.addEventListener("beforeprint",()=>{ if(!$("#exportModal").classList.contains("open")){ printedFromApp=true; $("#exportBody").innerHTML=reportHTML(); $("#exportModal").classList.add("open"); paginate($("#exportBody")); } });
+window.addEventListener("beforeprint",()=>{ if(!$("#exportModal").classList.contains("open")){ printedFromApp=true; $("#exportBody").innerHTML=curReport(); $("#exportModal").classList.add("open"); paginate($("#exportBody")); } });
 window.addEventListener("afterprint",()=>{ if(printedFromApp){ printedFromApp=false; closeExport(); } });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ if($("#exportModal").classList.contains("open")) closeExport(); else closeDash(); } });
 
